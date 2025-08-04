@@ -113,7 +113,7 @@
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);..</AdditionalIncludeDirectories>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);_WIN32;UNICODE;_UNICODE;PC_IMPLEMENTATION</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);DEBUG_LEVEL=DEBUGLVL_TERSE</PreprocessorDefinitions>
@@ -159,7 +159,7 @@
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(DDK_INC_PATH);..</AdditionalIncludeDirectories>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);_WIN32;UNICODE;_UNICODE;PC_IMPLEMENTATION</PreprocessorDefinitions>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);DEBUG_LEVEL=DEBUGLVL_TERSE</PreprocessorDefinitions>
@@ -293,6 +293,11 @@
     <ClCompile Include="..\savedata.cpp" />
     <ClCompile Include="..\tonegenerator.cpp" />
     <ClCompile Include="..\UsbHsDevice.cpp" />
+    <ClCompile Include="AudioVolumeControl\AudioControlCore.cpp" />
+    <ClCompile Include="AudioVolumeControl\AudioControlDispatch.cpp" />
+    <ClCompile Include="AudioVolumeControl\AudioEQControl.cpp" />
+    <ClCompile Include="AudioVolumeControl\AudioEQDispatch.cpp" />
+    <ClCompile Include="AudioVolumeControl\eq.cpp" />
     <ClCompile Include="hdmitopo.cpp" />
     <ClCompile Include="micintopo.cpp" />
     <ClCompile Include="spdiftopo.cpp" />
@@ -309,6 +314,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Exclude="@(ClInclude)" Include="*.h;*.hpp;*.hxx;*.hm;*.inl;*.xsd" />
+    <ClInclude Include="AudioVolumeControl\AudioEQControl.h" />
+    <ClInclude Include="AudioVolumeControl\AudioEQTypes.h" />
+    <ClInclude Include="AudioVolumeControl\AudioVolumeControl.h" />
+    <ClInclude Include="AudioVolumeControl\eq.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

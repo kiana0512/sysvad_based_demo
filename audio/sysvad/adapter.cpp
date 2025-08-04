@@ -13,7 +13,7 @@ Abstract:
 
 --*/
 
-#pragma warning (disable : 4127)
+#pragma warning(disable : 4127)
 
 //
 // All the GUIDS for all the miniports end up in this object.
@@ -35,11 +35,11 @@ Abstract:
 #ifdef SYSVAD_A2DP_SIDEBAND
 #include "a2dphpminipairs.h"
 #endif // SYSVAD_A2DP_SIDEBAND
+#include <AudioVolumeControl/AudioVolumeControl.h>
+#include ".\\TabletAudioSample\AudioVolumeControl\\AudioEQControl.h"
 
 
-
-
-typedef void (*fnPcDriverUnload) (PDRIVER_OBJECT);
+typedef void (*fnPcDriverUnload)(PDRIVER_OBJECT);
 fnPcDriverUnload gPCDriverUnloadRoutine = NULL;
 extern "C" DRIVER_UNLOAD DriverUnload;
 
@@ -52,90 +52,85 @@ C_ASSERT(sizeof(POHANDLE) == sizeof(PVOID));
 // used here are for illustration purposes only. The driver should use values that
 // are appropriate for its device.
 //
-#define SYSVAD_FSTATE_COUNT                     4
+#define SYSVAD_FSTATE_COUNT 4
 
-#define SYSVAD_F0_LATENCY_IN_MS                 0
-#define SYSVAD_F0_RESIDENCY_IN_SEC              0
+#define SYSVAD_F0_LATENCY_IN_MS 0
+#define SYSVAD_F0_RESIDENCY_IN_SEC 0
 
-#define SYSVAD_F1_LATENCY_IN_MS                 200
-#define SYSVAD_F1_RESIDENCY_IN_SEC              3
+#define SYSVAD_F1_LATENCY_IN_MS 200
+#define SYSVAD_F1_RESIDENCY_IN_SEC 3
 
-#define SYSVAD_F2_LATENCY_IN_MS                 400
-#define SYSVAD_F2_RESIDENCY_IN_SEC              6
+#define SYSVAD_F2_LATENCY_IN_MS 400
+#define SYSVAD_F2_RESIDENCY_IN_SEC 6
 
-#define SYSVAD_F3_LATENCY_IN_MS                 800  
-#define SYSVAD_F3_RESIDENCY_IN_SEC              12
+#define SYSVAD_F3_LATENCY_IN_MS 800
+#define SYSVAD_F3_RESIDENCY_IN_SEC 12
 
-#define SYSVAD_DEEPEST_FSTATE_LATENCY_IN_MS     SYSVAD_F3_LATENCY_IN_MS
-#define SYSVAD_DEEPEST_FSTATE_RESIDENCY_IN_SEC  SYSVAD_F3_RESIDENCY_IN_SEC
+#define SYSVAD_DEEPEST_FSTATE_LATENCY_IN_MS SYSVAD_F3_LATENCY_IN_MS
+#define SYSVAD_DEEPEST_FSTATE_RESIDENCY_IN_SEC SYSVAD_F3_RESIDENCY_IN_SEC
 
 //-----------------------------------------------------------------------------
 // PoFx - Single Component - Multi Fx States support.
 //-----------------------------------------------------------------------------
 
-PO_FX_COMPONENT_IDLE_STATE_CALLBACK         PcPowerFxComponentIdleStateCallback;
-PO_FX_COMPONENT_ACTIVE_CONDITION_CALLBACK   PcPowerFxComponentActiveConditionCallback;
-PO_FX_COMPONENT_IDLE_CONDITION_CALLBACK     PcPowerFxComponentIdleConditionCallback;
-PO_FX_POWER_CONTROL_CALLBACK                PcPowerFxPowerControlCallback;
-EVT_PC_POST_PO_FX_REGISTER_DEVICE           PcPowerFxRegisterDevice;
-EVT_PC_PRE_PO_FX_UNREGISTER_DEVICE          PcPowerFxUnregisterDevice;
+PO_FX_COMPONENT_IDLE_STATE_CALLBACK PcPowerFxComponentIdleStateCallback;
+PO_FX_COMPONENT_ACTIVE_CONDITION_CALLBACK PcPowerFxComponentActiveConditionCallback;
+PO_FX_COMPONENT_IDLE_CONDITION_CALLBACK PcPowerFxComponentIdleConditionCallback;
+PO_FX_POWER_CONTROL_CALLBACK PcPowerFxPowerControlCallback;
+EVT_PC_POST_PO_FX_REGISTER_DEVICE PcPowerFxRegisterDevice;
+EVT_PC_PRE_PO_FX_UNREGISTER_DEVICE PcPowerFxUnregisterDevice;
 
 #pragma code_seg("PAGE")
 _Function_class_(EVT_PC_POST_PO_FX_REGISTER_DEVICE)
-_IRQL_requires_same_
-_IRQL_requires_max_(PASSIVE_LEVEL)
+    _IRQL_requires_same_
+    _IRQL_requires_max_(PASSIVE_LEVEL)
 NTSTATUS
 PcPowerFxRegisterDevice(
-    _In_ PVOID    PoFxDeviceContext,
-    _In_ POHANDLE PoHandle
-    )
+    _In_ PVOID PoFxDeviceContext,
+    _In_ POHANDLE PoHandle)
 {
-    PDEVICE_OBJECT              DeviceObject    = (PDEVICE_OBJECT)PoFxDeviceContext;
-    PortClassDeviceContext*     pExtension      = static_cast<PortClassDeviceContext*>(DeviceObject->DeviceExtension);
-    
-    PAGED_CODE(); 
-    
+    PDEVICE_OBJECT DeviceObject = (PDEVICE_OBJECT)PoFxDeviceContext;
+    PortClassDeviceContext *pExtension = static_cast<PortClassDeviceContext *>(DeviceObject->DeviceExtension);
+
+    PAGED_CODE();
+
     DPF(D_VERBOSE, ("PcPowerFxRegisterDevice Context %p, PoHandle %p", PoFxDeviceContext, PoHandle));
 
     pExtension->m_poHandle = PoHandle;
-    
+
     //
     // Set latency and residency hints so that the power framework chooses lower
     // powered F-states when we are idle.
-    // The values used here are for illustration purposes only. The driver 
+    // The values used here are for illustration purposes only. The driver
     // should use values that are appropriate for its device.
     //
     PoFxSetComponentLatency(
         PoHandle,
         0, // Component
-        (WDF_ABS_TIMEOUT_IN_MS(SYSVAD_DEEPEST_FSTATE_LATENCY_IN_MS) + 1)
-        );
+        (WDF_ABS_TIMEOUT_IN_MS(SYSVAD_DEEPEST_FSTATE_LATENCY_IN_MS) + 1));
     PoFxSetComponentResidency(
         PoHandle,
         0, // Component
-        (WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_DEEPEST_FSTATE_RESIDENCY_IN_SEC) + 1)
-        );
+        (WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_DEEPEST_FSTATE_RESIDENCY_IN_SEC) + 1));
 
     return STATUS_SUCCESS;
 }
 
 #pragma code_seg("PAGE")
 _Function_class_(EVT_PC_PRE_PO_FX_UNREGISTER_DEVICE)
-_IRQL_requires_same_
-_IRQL_requires_max_(PASSIVE_LEVEL)
-VOID
-PcPowerFxUnregisterDevice(
-    _In_ PVOID    PoFxDeviceContext,
-    _In_ POHANDLE PoHandle
-    )
+    _IRQL_requires_same_
+    _IRQL_requires_max_(PASSIVE_LEVEL)
+VOID PcPowerFxUnregisterDevice(
+    _In_ PVOID PoFxDeviceContext,
+    _In_ POHANDLE PoHandle)
 {
-    PDEVICE_OBJECT              DeviceObject    = (PDEVICE_OBJECT)PoFxDeviceContext;
-    PortClassDeviceContext*     pExtension      = static_cast<PortClassDeviceContext*>(DeviceObject->DeviceExtension);
+    PDEVICE_OBJECT DeviceObject = (PDEVICE_OBJECT)PoFxDeviceContext;
+    PortClassDeviceContext *pExtension = static_cast<PortClassDeviceContext *>(DeviceObject->DeviceExtension);
 
     UNREFERENCED_PARAMETER(PoHandle);
-        
+
     PAGED_CODE();
-    
+
     DPF(D_VERBOSE, ("PcPowerFxUnregisterDevice Context %p, PoHandle %p", PoFxDeviceContext, PoHandle));
 
     //
@@ -147,72 +142,68 @@ PcPowerFxUnregisterDevice(
 
 #pragma code_seg()
 __drv_functionClass(PO_FX_COMPONENT_IDLE_STATE_CALLBACK)
-_IRQL_requires_max_(DISPATCH_LEVEL)
-VOID
-PcPowerFxComponentIdleStateCallback(
-    _In_ PVOID      Context,
-    _In_ ULONG      Component,
-    _In_ ULONG      State
-    )
+    _IRQL_requires_max_(DISPATCH_LEVEL)
+        VOID
+    PcPowerFxComponentIdleStateCallback(
+        _In_ PVOID Context,
+        _In_ ULONG Component,
+        _In_ ULONG State)
 {
-    PDEVICE_OBJECT              DeviceObject    = (PDEVICE_OBJECT)Context;
-    PortClassDeviceContext*     pExtension      = static_cast<PortClassDeviceContext*>(DeviceObject->DeviceExtension);
-    
+    PDEVICE_OBJECT DeviceObject = (PDEVICE_OBJECT)Context;
+    PortClassDeviceContext *pExtension = static_cast<PortClassDeviceContext *>(DeviceObject->DeviceExtension);
+
     UNREFERENCED_PARAMETER(State);
-    
-    DPF(D_VERBOSE, ("PcPowerFxComponentIdleStateCallback Context %p, Component %d, State %d", 
-        Context, Component, State));
-    
+
+    DPF(D_VERBOSE, ("PcPowerFxComponentIdleStateCallback Context %p, Component %d, State %d",
+                    Context, Component, State));
+
     PoFxCompleteIdleState(pExtension->m_poHandle, Component);
 }
 
 #pragma code_seg()
 __drv_functionClass(PO_FX_COMPONENT_ACTIVE_CONDITION_CALLBACK)
-_IRQL_requires_max_(DISPATCH_LEVEL)
-VOID
-PcPowerFxComponentActiveConditionCallback(
-    _In_ PVOID      Context,
-    _In_ ULONG      Component
-    )
+    _IRQL_requires_max_(DISPATCH_LEVEL)
+        VOID
+    PcPowerFxComponentActiveConditionCallback(
+        _In_ PVOID Context,
+        _In_ ULONG Component)
 {
     UNREFERENCED_PARAMETER(Context);
     UNREFERENCED_PARAMETER(Component);
-    
-    DPF(D_VERBOSE, ("PcPowerFxComponentActiveConditionCallback Context %p, Component %d", 
-        Context, Component));
+
+    DPF(D_VERBOSE, ("PcPowerFxComponentActiveConditionCallback Context %p, Component %d",
+                    Context, Component));
 }
 
 #pragma code_seg()
 __drv_functionClass(PO_FX_COMPONENT_IDLE_CONDITION_CALLBACK)
-_IRQL_requires_max_(DISPATCH_LEVEL)
-VOID
-PcPowerFxComponentIdleConditionCallback(
-    _In_ PVOID      Context,
-    _In_ ULONG      Component
-    )
+    _IRQL_requires_max_(DISPATCH_LEVEL)
+        VOID
+    PcPowerFxComponentIdleConditionCallback(
+        _In_ PVOID Context,
+        _In_ ULONG Component)
 {
-    PDEVICE_OBJECT              DeviceObject    = (PDEVICE_OBJECT)Context;
-    PortClassDeviceContext*     pExtension      = static_cast<PortClassDeviceContext*>(DeviceObject->DeviceExtension);
-    
-    DPF(D_VERBOSE, ("PcPowerFxComponentIdleConditionCallback Context %p, Component %d", 
-        Context, Component));
+    PDEVICE_OBJECT DeviceObject = (PDEVICE_OBJECT)Context;
+    PortClassDeviceContext *pExtension = static_cast<PortClassDeviceContext *>(DeviceObject->DeviceExtension);
+
+    DPF(D_VERBOSE, ("PcPowerFxComponentIdleConditionCallback Context %p, Component %d",
+                    Context, Component));
 
     PoFxCompleteIdleCondition(pExtension->m_poHandle, Component);
 }
 
 #pragma code_seg()
 __drv_functionClass(PO_FX_POWER_CONTROL_CALLBACK)
-_IRQL_requires_max_(DISPATCH_LEVEL)
-NTSTATUS
-PcPowerFxPowerControlCallback(
-    _In_                                    PVOID   DeviceContext,
-    _In_                                    LPCGUID PowerControlCode,
-    _In_reads_bytes_opt_(InBufferSize)      PVOID   InBuffer,
-    _In_                                    SIZE_T  InBufferSize,
-    _Out_writes_bytes_opt_(OutBufferSize)   PVOID   OutBuffer,
-    _In_                                    SIZE_T  OutBufferSize,
-    _Out_opt_                               PSIZE_T BytesReturned
-)
+    _IRQL_requires_max_(DISPATCH_LEVEL)
+        NTSTATUS
+    PcPowerFxPowerControlCallback(
+        _In_ PVOID DeviceContext,
+        _In_ LPCGUID PowerControlCode,
+        _In_reads_bytes_opt_(InBufferSize) PVOID InBuffer,
+        _In_ SIZE_T InBufferSize,
+        _Out_writes_bytes_opt_(OutBufferSize) PVOID OutBuffer,
+        _In_ SIZE_T OutBufferSize,
+        _Out_opt_ PSIZE_T BytesReturned)
 {
     UNREFERENCED_PARAMETER(DeviceContext);
     UNREFERENCED_PARAMETER(PowerControlCode);
@@ -221,7 +212,7 @@ PcPowerFxPowerControlCallback(
     UNREFERENCED_PARAMETER(OutBuffer);
     UNREFERENCED_PARAMETER(OutBufferSize);
     UNREFERENCED_PARAMETER(BytesReturned);
-    
+
     DPF(D_VERBOSE, ("PcPowerFxPowerControlCallback Context %p", DeviceContext));
 
     return STATUS_SUCCESS;
@@ -235,47 +226,44 @@ PcPowerFxPowerControlCallback(
 DRIVER_ADD_DEVICE AddDevice;
 
 NTSTATUS
-StartDevice
-( 
-    _In_  PDEVICE_OBJECT,      
-    _In_  PIRP,                
-    _In_  PRESOURCELIST        
-); 
+StartDevice(
+    _In_ PDEVICE_OBJECT,
+    _In_ PIRP,
+    _In_ PRESOURCELIST);
 
 _Dispatch_type_(IRP_MJ_PNP)
-DRIVER_DISPATCH PnpHandler;
+    DRIVER_DISPATCH PnpHandler;
 
 //
-// Rendering streams are not saved to a file by default. Use the registry value 
+// Rendering streams are not saved to a file by default. Use the registry value
 // DoNotCreateDataFiles (DWORD) = 0 to override this default.
 //
-DWORD g_DoNotCreateDataFiles = 1;  // default is off.
-DWORD g_DisableToneGenerator = 0;  // default is to generate tones.
-UNICODE_STRING g_RegistryPath;      // This is used to store the registry settings path for the driver
-
+DWORD g_DoNotCreateDataFiles = 1; // default is off.
+DWORD g_DisableToneGenerator = 0; // default is to generate tones.
+UNICODE_STRING g_RegistryPath;    // This is used to store the registry settings path for the driver
 
 #ifdef SYSVAD_BTH_BYPASS
 //
-// This driver listens for arrival/removal of the bth sco bypass interfaces by 
-// default. Use the registry value DisableBthScoBypass (DWORD) > 0 to override 
+// This driver listens for arrival/removal of the bth sco bypass interfaces by
+// default. Use the registry value DisableBthScoBypass (DWORD) > 0 to override
 // this default.
 //
-DWORD g_DisableBthScoBypass = 0;   // default is SCO bypass enabled.
-#endif // SYSVAD_BTH_BYPASS
+DWORD g_DisableBthScoBypass = 0; // default is SCO bypass enabled.
+#endif                           // SYSVAD_BTH_BYPASS
 
 #ifdef SYSVAD_USB_SIDEBAND
 //
-// This driver listens for arrival/removal of the USB Sideband interfaces by 
-// default. Use the registry value DisableUsbSideband (DWORD) > 0 to override 
+// This driver listens for arrival/removal of the USB Sideband interfaces by
+// default. Use the registry value DisableUsbSideband (DWORD) > 0 to override
 // this default.
 //
-DWORD g_DisableUsbSideband = 0;   // default is USB bypass enabled.
-#endif // SYSVAD_USB_SIDEBAND
+DWORD g_DisableUsbSideband = 0; // default is USB bypass enabled.
+#endif                          // SYSVAD_USB_SIDEBAND
 
 #ifdef SYSVAD_A2DP_SIDEBAND
 //
-// This driver listens for arrival/removal of the Bluetooth A2DP Sideband interfaces by 
-// default. Use the registry value DisableA2dpSideband (DWORD) > 0 to override 
+// This driver listens for arrival/removal of the Bluetooth A2DP Sideband interfaces by
+// default. Use the registry value DisableA2dpSideband (DWORD) > 0 to override
 // this default.
 //
 DWORD g_DisableA2dpSideband = 0; // default is A2DP bypass enabled.
@@ -301,11 +289,8 @@ void ReleaseRegistryStringBuffer()
 
 //=============================================================================
 #pragma code_seg("PAGE")
-extern "C"
-void DriverUnload 
-(
-    _In_ PDRIVER_OBJECT DriverObject
-)
+extern "C" void DriverUnload(
+    _In_ PDRIVER_OBJECT DriverObject)
 /*++
 
 Routine Description:
@@ -322,7 +307,7 @@ Environment:
 
 --*/
 {
-    PAGED_CODE(); 
+    PAGED_CODE();
 
     DPF(D_TERSE, ("[DriverUnload]"));
 
@@ -332,7 +317,7 @@ Environment:
     {
         goto Done;
     }
-    
+
     //
     // Invoke first the port unload.
     //
@@ -357,10 +342,9 @@ Done:
 //=============================================================================
 #pragma code_seg("INIT")
 __drv_requiresIRQL(PASSIVE_LEVEL)
-NTSTATUS
-CopyRegistrySettingsPath(
-    _In_ PUNICODE_STRING RegistryPath
-)
+    NTSTATUS
+    CopyRegistrySettingsPath(
+        _In_ PUNICODE_STRING RegistryPath)
 /*++
 
 Routine Description:
@@ -400,10 +384,9 @@ NTSTATUS - SUCCESS if able to configure the framework
 //=============================================================================
 #pragma code_seg("INIT")
 __drv_requiresIRQL(PASSIVE_LEVEL)
-NTSTATUS
-GetRegistrySettings(
-    _In_ PUNICODE_STRING RegistryPath
-   )
+    NTSTATUS
+    GetRegistrySettings(
+        _In_ PUNICODE_STRING RegistryPath)
 /*++
 
 Routine Description:
@@ -424,21 +407,20 @@ Returns:
 --*/
 
 {
-    NTSTATUS                    ntStatus;
-    PDRIVER_OBJECT              DriverObject;
-    HANDLE                      DriverKey;
-    RTL_QUERY_REGISTRY_TABLE    paramTable[] = {
-    // QueryRoutine     Flags                                               Name                     EntryContext             DefaultType                                                    DefaultData              DefaultLength
-        { NULL,   RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DoNotCreateDataFiles", &g_DoNotCreateDataFiles, (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DoNotCreateDataFiles, sizeof(ULONG)},
-        { NULL,   RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DisableToneGenerator", &g_DisableToneGenerator, (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DisableToneGenerator, sizeof(ULONG)},
+    NTSTATUS ntStatus;
+    PDRIVER_OBJECT DriverObject;
+    HANDLE DriverKey;
+    RTL_QUERY_REGISTRY_TABLE paramTable[] = {
+        // QueryRoutine     Flags                                               Name                     EntryContext             DefaultType                                                    DefaultData              DefaultLength
+        {NULL, RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DoNotCreateDataFiles", &g_DoNotCreateDataFiles, (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DoNotCreateDataFiles, sizeof(ULONG)},
+        {NULL, RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DisableToneGenerator", &g_DisableToneGenerator, (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DisableToneGenerator, sizeof(ULONG)},
 #ifdef SYSVAD_BTH_BYPASS
-        { NULL,   RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DisableBthScoBypass",  &g_DisableBthScoBypass,  (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DisableBthScoBypass,  sizeof(ULONG)},
+        {NULL, RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DisableBthScoBypass", &g_DisableBthScoBypass, (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DisableBthScoBypass, sizeof(ULONG)},
 #endif // SYSVAD_BTH_BYPASS
 #ifdef SYSVAD_USB_SIDEBAND
-        { NULL,   RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DisableUsbSideband",  &g_DisableUsbSideband,  (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DisableUsbSideband,  sizeof(ULONG)},
+        {NULL, RTL_QUERY_REGISTRY_DIRECT | RTL_QUERY_REGISTRY_TYPECHECK, L"DisableUsbSideband", &g_DisableUsbSideband, (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_DWORD, &g_DisableUsbSideband, sizeof(ULONG)},
 #endif // SYSVAD_USB_SIDEBAND
-        { NULL,   0,                                                        NULL,                    NULL,                    0,                                                             NULL,                    0}
-    };
+        {NULL, 0, NULL, NULL, 0, NULL, 0}};
 
     DPF(D_TERSE, ("[GetRegistrySettings]"));
 
@@ -447,11 +429,11 @@ Returns:
 
     DriverObject = WdfDriverWdmGetDriverObject(WdfGetDriver());
     DriverKey = NULL;
-    ntStatus = IoOpenDriverRegistryKey(DriverObject, 
-                                 DriverRegKeyParameters,
-                                 KEY_READ,
-                                 0,
-                                 &DriverKey);
+    ntStatus = IoOpenDriverRegistryKey(DriverObject,
+                                       DriverRegKeyParameters,
+                                       KEY_READ,
+                                       0,
+                                       &DriverKey);
 
     if (!NT_SUCCESS(ntStatus))
     {
@@ -459,12 +441,12 @@ Returns:
     }
 
     ntStatus = RtlQueryRegistryValues(RTL_REGISTRY_HANDLE,
-                                  (PCWSTR) DriverKey,
-                                  &paramTable[0],
-                                  NULL,
-                                  NULL);
+                                      (PCWSTR)DriverKey,
+                                      &paramTable[0],
+                                      NULL,
+                                      NULL);
 
-    if (!NT_SUCCESS(ntStatus)) 
+    if (!NT_SUCCESS(ntStatus))
     {
         DPF(D_VERBOSE, ("RtlQueryRegistryValues failed, using default values, 0x%x", ntStatus));
         //
@@ -495,36 +477,34 @@ Returns:
 #pragma code_seg("INIT")
 extern "C" DRIVER_INITIALIZE DriverEntry;
 extern "C" NTSTATUS
-DriverEntry
-( 
-    _In_  PDRIVER_OBJECT          DriverObject,
-    _In_  PUNICODE_STRING         RegistryPathName
-)
+DriverEntry(
+    _In_ PDRIVER_OBJECT DriverObject,
+    _In_ PUNICODE_STRING RegistryPathName)
 {
-/*++
+    /*++
 
-Routine Description:
+    Routine Description:
 
-  Installable driver initialization entry point.
-  This entry point is called directly by the I/O system.
+      Installable driver initialization entry point.
+      This entry point is called directly by the I/O system.
 
-  All audio adapter drivers can use this code without change.
+      All audio adapter drivers can use this code without change.
 
-Arguments:
+    Arguments:
 
-  DriverObject - pointer to the driver object
+      DriverObject - pointer to the driver object
 
-  RegistryPath - pointer to a unicode string representing the path,
-                   to driver-specific key in the registry.
+      RegistryPath - pointer to a unicode string representing the path,
+                       to driver-specific key in the registry.
 
-Return Value:
+    Return Value:
 
-  STATUS_SUCCESS if successful,
-  STATUS_UNSUCCESSFUL otherwise.
+      STATUS_SUCCESS if successful,
+      STATUS_UNSUCCESSFUL otherwise.
 
---*/
-    NTSTATUS                    ntStatus;
-    WDF_DRIVER_CONFIG           config;
+    --*/
+    NTSTATUS ntStatus;
+    WDF_DRIVER_CONFIG config;
 
     DPF(D_TERSE, ("[DriverEntry]"));
 
@@ -536,7 +516,7 @@ Return Value:
         ntStatus,
         DPF(D_ERROR, ("Registry path copy error 0x%x", ntStatus)),
         Done);
-    
+
     WDF_DRIVER_CONFIG_INIT(&config, WDF_NO_EVENT_CALLBACK);
     //
     // Set WdfDriverInitNoDispatchOverride flag to tell the framework
@@ -546,7 +526,7 @@ Return Value:
     // port driver.
     //
     config.DriverInitFlags |= WdfDriverInitNoDispatchOverride;
-    config.DriverPoolTag    = MINADAPTER_POOLTAG;
+    config.DriverPoolTag = MINADAPTER_POOLTAG;
 
     ntStatus = WdfDriverCreate(DriverObject,
                                RegistryPathName,
@@ -570,9 +550,9 @@ Return Value:
     //
     // Tell the class driver to initialize the driver.
     //
-    ntStatus =  PcInitializeAdapterDriver(DriverObject,
-                                          RegistryPathName,
-                                          (PDRIVER_ADD_DEVICE)AddDevice);
+    ntStatus = PcInitializeAdapterDriver(DriverObject,
+                                         RegistryPathName,
+                                         (PDRIVER_ADD_DEVICE)AddDevice);
     IF_FAILED_ACTION_JUMP(
         ntStatus,
         DPF(D_ERROR, ("PcInitializeAdapterDriver failed, 0x%x", ntStatus)),
@@ -593,7 +573,7 @@ Return Value:
     // All done.
     //
     ntStatus = STATUS_SUCCESS;
-    
+
 Done:
 
     if (!NT_SUCCESS(ntStatus))
@@ -605,21 +585,19 @@ Done:
 
         ReleaseRegistryStringBuffer();
     }
-    
+
     return ntStatus;
 } // DriverEntry
 
 #pragma code_seg()
-// disable prefast warning 28152 because 
+// disable prefast warning 28152 because
 // DO_DEVICE_INITIALIZING is cleared in PcAddAdapterDevice
-#pragma warning(disable:28152)
+#pragma warning(disable : 28152)
 #pragma code_seg("PAGE")
 //=============================================================================
-NTSTATUS AddDevice
-( 
-    _In_  PDRIVER_OBJECT    DriverObject,
-    _In_  PDEVICE_OBJECT    PhysicalDeviceObject 
-)
+NTSTATUS AddDevice(
+    _In_ PDRIVER_OBJECT DriverObject,
+    _In_ PDEVICE_OBJECT PhysicalDeviceObject)
 /*++
 
 Routine Description:
@@ -649,50 +627,67 @@ Return Value:
 {
     PAGED_CODE();
 
-    NTSTATUS        ntStatus;
-    ULONG           maxObjects;
+    NTSTATUS ntStatus;
+    ULONG maxObjects;
 
     DPF(D_TERSE, ("[AddDevice]"));
 
     maxObjects = g_MaxMiniports;
 
 #ifdef SYSVAD_BTH_BYPASS
-    maxObjects += g_MaxBthHfpMiniports; 
+    maxObjects += g_MaxBthHfpMiniports;
 #endif // SYSVAD_BTH_BYPASS
 #ifdef SYSVAD_USB_SIDEBAND
-    maxObjects += g_MaxUsbHsMiniports; 
+    maxObjects += g_MaxUsbHsMiniports;
 #endif // SYSVAD_USB_SIDEBAND
 
-    // Tell the class driver to add the device.
-    //
-    ntStatus = 
-        PcAddAdapterDevice
-        ( 
-            DriverObject,
-            PhysicalDeviceObject,
-            PCPFNSTARTDEVICE(StartDevice),
-            maxObjects,
-            0
-        );
+    /// Step 1: 添加音频设备
+    ntStatus = PcAddAdapterDevice(
+        DriverObject,
+        PhysicalDeviceObject,
+        PCPFNSTARTDEVICE(StartDevice),
+        maxObjects,
+        0);
+    DbgPrint("[DBG] PcAddAdapterDevice returned 0x%08x\n", ntStatus);
 
+    if (!NT_SUCCESS(ntStatus))
+    {
+        DPF(D_ERROR, ("PcAddAdapterDevice failed: 0x%08x", ntStatus));
+        return ntStatus;
+    }
 
+    // Step 2: 添加 IOCTL 设备
+    NTSTATUS ioctlStatus = AudioVolumeControl_CreateDeviceAndSymbolicLink(DriverObject);
+    if (!NT_SUCCESS(ioctlStatus))
+    {
+        DPF(D_ERROR, ("[AddDevice] AudioVolumeControl init failed: 0x%x", ioctlStatus));
+    }
+    else
+    {
+        DPF(D_TERSE, ("[AddDevice] AudioVolumeControl device ready."));
 
+        // 仅当控制设备创建成功时初始化 EQ 参数
+        EQControl_Init(); // ← 初始化 12 段 EQ 全局参数
+        DbgPrint("[DBG] EQControl_Init called. BandCount = %d, DefaultFreq = %dHz",
+                 g_EqParams.BandCount,
+                 g_EqParams.Bands[0].FrequencyHz); // 举例输出第一段的默认频率
+    }
+
+    DbgPrint("[DBG] <=== AddDevice() done.\n");
     return ntStatus;
 } // AddDevice
 
 #pragma code_seg()
 NTSTATUS
 _IRQL_requires_max_(DISPATCH_LEVEL)
-PowerControlCallback
-(
-    _In_        LPCGUID PowerControlCode,
-    _In_opt_    PVOID   InBuffer,
-    _In_        SIZE_T  InBufferSize,
-    _Out_writes_bytes_to_(OutBufferSize, *BytesReturned) PVOID OutBuffer,
-    _In_        SIZE_T  OutBufferSize,
-    _Out_opt_   PSIZE_T BytesReturned,
-    _In_opt_    PVOID   Context
-)
+    PowerControlCallback(
+        _In_ LPCGUID PowerControlCode,
+        _In_opt_ PVOID InBuffer,
+        _In_ SIZE_T InBufferSize,
+        _Out_writes_bytes_to_(OutBufferSize, *BytesReturned) PVOID OutBuffer,
+        _In_ SIZE_T OutBufferSize,
+        _Out_opt_ PSIZE_T BytesReturned,
+        _In_opt_ PVOID Context)
 {
     UNREFERENCED_PARAMETER(PowerControlCode);
     UNREFERENCED_PARAMETER(BytesReturned);
@@ -701,31 +696,30 @@ PowerControlCallback
     UNREFERENCED_PARAMETER(OutBufferSize);
     UNREFERENCED_PARAMETER(InBufferSize);
     UNREFERENCED_PARAMETER(Context);
-    
+
     return STATUS_NOT_IMPLEMENTED;
 }
 
 #pragma code_seg("PAGE")
-NTSTATUS 
+NTSTATUS
 InstallEndpointRenderFilters(
-    _In_ PDEVICE_OBJECT     _pDeviceObject, 
-    _In_ PIRP               _pIrp, 
-    _In_ PADAPTERCOMMON     _pAdapterCommon,
-    _In_ PENDPOINT_MINIPAIR _pAeMiniports
-    )
+    _In_ PDEVICE_OBJECT _pDeviceObject,
+    _In_ PIRP _pIrp,
+    _In_ PADAPTERCOMMON _pAdapterCommon,
+    _In_ PENDPOINT_MINIPAIR _pAeMiniports)
 {
-    NTSTATUS                    ntStatus                = STATUS_SUCCESS;
-    PUNKNOWN                    unknownTopology         = NULL;
-    PUNKNOWN                    unknownWave             = NULL;
-    PPORTCLSETWHELPER           pPortClsEtwHelper       = NULL;
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+    PUNKNOWN unknownTopology = NULL;
+    PUNKNOWN unknownWave = NULL;
+    PPORTCLSETWHELPER pPortClsEtwHelper = NULL;
 #ifdef _USE_IPortClsRuntimePower
-    PPORTCLSRUNTIMEPOWER        pPortClsRuntimePower    = NULL;
+    PPORTCLSRUNTIMEPOWER pPortClsRuntimePower = NULL;
 #endif // _USE_IPortClsRuntimePower
-    PPORTCLSStreamResourceManager pPortClsResMgr        = NULL;
-    PPORTCLSStreamResourceManager2 pPortClsResMgr2      = NULL;
+    PPORTCLSStreamResourceManager pPortClsResMgr = NULL;
+    PPORTCLSStreamResourceManager2 pPortClsResMgr2 = NULL;
 
     PAGED_CODE();
-    
+
     UNREFERENCED_PARAMETER(_pDeviceObject);
 
     ntStatus = _pAdapterCommon->InstallEndpointFilters(
@@ -738,7 +732,7 @@ InstallEndpointRenderFilters(
 
     if (unknownWave) // IID_IPortClsEtwHelper and IID_IPortClsRuntimePower interfaces are only exposed on the WaveRT port.
     {
-        ntStatus = unknownWave->QueryInterface (IID_IPortClsEtwHelper, (PVOID *)&pPortClsEtwHelper);
+        ntStatus = unknownWave->QueryInterface(IID_IPortClsEtwHelper, (PVOID *)&pPortClsEtwHelper);
         if (NT_SUCCESS(ntStatus))
         {
             _pAdapterCommon->SetEtwHelper(pPortClsEtwHelper);
@@ -747,23 +741,21 @@ InstallEndpointRenderFilters(
         }
 
 #ifdef _USE_IPortClsRuntimePower
-        // Let's get the runtime power interface on PortCls.  
+        // Let's get the runtime power interface on PortCls.
         ntStatus = unknownWave->QueryInterface(IID_IPortClsRuntimePower, (PVOID *)&pPortClsRuntimePower);
         if (NT_SUCCESS(ntStatus))
         {
             // This interface would typically be stashed away for later use.  Instead,
             // let's just send an empty control with GUID_NULL.
             NTSTATUS ntStatusTest =
-                pPortClsRuntimePower->SendPowerControl
-                (
+                pPortClsRuntimePower->SendPowerControl(
                     _pDeviceObject,
                     &GUID_NULL,
                     NULL,
                     0,
                     NULL,
                     0,
-                    NULL
-                );
+                    NULL);
 
             if (NT_SUCCESS(ntStatusTest) || STATUS_NOT_IMPLEMENTED == ntStatusTest || STATUS_NOT_SUPPORTED == ntStatusTest)
             {
@@ -783,8 +775,8 @@ InstallEndpointRenderFilters(
 #endif // _USE_IPortClsRuntimePower
 
         //
-        // Test: add and remove current thread as streaming audio resource.  
-        // In a real driver you should only add interrupts and driver-owned threads 
+        // Test: add and remove current thread as streaming audio resource.
+        // In a real driver you should only add interrupts and driver-owned threads
         // (i.e., do NOT add the current thread as streaming resource).
         //
         // testing IPortClsStreamResourceManager:
@@ -800,7 +792,7 @@ InstallEndpointRenderFilters(
             res.Pdo = pdo;
             res.Type = ePcStreamResourceThread;
             res.Resource.Thread = PsGetCurrentThread();
-            
+
             NTSTATUS ntStatusTest = pPortClsResMgr->AddStreamResource(NULL, &res, &hRes);
             if (NT_SUCCESS(ntStatusTest))
             {
@@ -811,7 +803,7 @@ InstallEndpointRenderFilters(
             pPortClsResMgr->Release();
             pPortClsResMgr = NULL;
         }
-        
+
         // testing IPortClsStreamResourceManager2:
         ntStatus = unknownWave->QueryInterface(IID_IPortClsStreamResourceManager2, (PVOID *)&pPortClsResMgr2);
         if (NT_SUCCESS(ntStatus))
@@ -825,7 +817,7 @@ InstallEndpointRenderFilters(
             res.Pdo = pdo;
             res.Type = ePcStreamResourceThread;
             res.Resource.Thread = PsGetCurrentThread();
-            
+
             NTSTATUS ntStatusTest = pPortClsResMgr2->AddStreamResource2(pdo, NULL, &res, &hRes);
             if (NT_SUCCESS(ntStatusTest))
             {
@@ -845,24 +837,23 @@ InstallEndpointRenderFilters(
 }
 
 #pragma code_seg("PAGE")
-NTSTATUS 
+NTSTATUS
 InstallAllRenderFilters(
-    _In_ PDEVICE_OBJECT _pDeviceObject, 
-    _In_ PIRP           _pIrp, 
-    _In_ PADAPTERCOMMON _pAdapterCommon
-    )
+    _In_ PDEVICE_OBJECT _pDeviceObject,
+    _In_ PIRP _pIrp,
+    _In_ PADAPTERCOMMON _pAdapterCommon)
 {
-    NTSTATUS            ntStatus;
-    PENDPOINT_MINIPAIR* ppAeMiniports   = g_RenderEndpoints;
-    
+    NTSTATUS ntStatus;
+    PENDPOINT_MINIPAIR *ppAeMiniports = g_RenderEndpoints;
+
     PAGED_CODE();
 
-    for(ULONG i = 0; i < g_cRenderEndpoints; ++i, ++ppAeMiniports)
+    for (ULONG i = 0; i < g_cRenderEndpoints; ++i, ++ppAeMiniports)
     {
         ntStatus = InstallEndpointRenderFilters(_pDeviceObject, _pIrp, _pAdapterCommon, *ppAeMiniports);
         IF_FAILED_JUMP(ntStatus, Exit);
     }
-    
+
     ntStatus = STATUS_SUCCESS;
 
 Exit:
@@ -870,16 +861,15 @@ Exit:
 }
 
 #pragma code_seg("PAGE")
-NTSTATUS 
+NTSTATUS
 InstallEndpointCaptureFilters(
-    _In_ PDEVICE_OBJECT     _pDeviceObject, 
-    _In_ PIRP               _pIrp, 
-    _In_ PADAPTERCOMMON     _pAdapterCommon, 
-    _In_ PENDPOINT_MINIPAIR _pAeMiniports
-    )
+    _In_ PDEVICE_OBJECT _pDeviceObject,
+    _In_ PIRP _pIrp,
+    _In_ PADAPTERCOMMON _pAdapterCommon,
+    _In_ PENDPOINT_MINIPAIR _pAeMiniports)
 {
-    NTSTATUS    ntStatus    = STATUS_SUCCESS;
-    
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+
     PAGED_CODE();
 
     UNREFERENCED_PARAMETER(_pDeviceObject);
@@ -891,29 +881,28 @@ InstallEndpointCaptureFilters(
         NULL,
         NULL,
         NULL, NULL);
-        
+
     return ntStatus;
 }
 
 #pragma code_seg("PAGE")
-NTSTATUS 
+NTSTATUS
 InstallAllCaptureFilters(
-    _In_ PDEVICE_OBJECT _pDeviceObject, 
-    _In_ PIRP           _pIrp, 
-    _In_ PADAPTERCOMMON _pAdapterCommon
-    )
+    _In_ PDEVICE_OBJECT _pDeviceObject,
+    _In_ PIRP _pIrp,
+    _In_ PADAPTERCOMMON _pAdapterCommon)
 {
-    NTSTATUS            ntStatus;
-    PENDPOINT_MINIPAIR* ppAeMiniports     = g_CaptureEndpoints;
-    
+    NTSTATUS ntStatus;
+    PENDPOINT_MINIPAIR *ppAeMiniports = g_CaptureEndpoints;
+
     PAGED_CODE();
 
-    for(ULONG i = 0; i < g_cCaptureEndpoints; ++i, ++ppAeMiniports)
+    for (ULONG i = 0; i < g_cCaptureEndpoints; ++i, ++ppAeMiniports)
     {
         ntStatus = InstallEndpointCaptureFilters(_pDeviceObject, _pIrp, _pAdapterCommon, *ppAeMiniports);
         IF_FAILED_JUMP(ntStatus, Exit);
     }
-    
+
     ntStatus = STATUS_SUCCESS;
 
 Exit:
@@ -925,7 +914,7 @@ Exit:
 #pragma code_seg("PAGE")
 NTSTATUS
 UseSingleComponentMultiFxStates(
-    _In_  PDEVICE_OBJECT    DeviceObject    
+    _In_ PDEVICE_OBJECT DeviceObject
 
 )
 {
@@ -933,7 +922,7 @@ UseSingleComponentMultiFxStates(
     PC_POWER_FRAMEWORK_SETTINGS poFxSettings;
     PO_FX_COMPONENT component;
     PO_FX_COMPONENT_IDLE_STATE idleStates[SYSVAD_FSTATE_COUNT];
-    
+
     //
     // Note that we initialize the 'idleStates' array below based on the
     // assumption that SYSVAD_FSTATE_COUNT is 4.
@@ -942,9 +931,9 @@ UseSingleComponentMultiFxStates(
     // we need to remove the corresponding initializations below.
     //
     C_ASSERT(SYSVAD_FSTATE_COUNT == 4);
-    
+
     PAGED_CODE();
-    
+
     //
     // Initialization
     //
@@ -954,28 +943,28 @@ UseSingleComponentMultiFxStates(
     //
     // F0
     //
-    idleStates[0].TransitionLatency = WDF_ABS_TIMEOUT_IN_MS(SYSVAD_F0_LATENCY_IN_MS);    
-    idleStates[0].ResidencyRequirement = WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_F0_RESIDENCY_IN_SEC);    
-    idleStates[0].NominalPower = 0;    
+    idleStates[0].TransitionLatency = WDF_ABS_TIMEOUT_IN_MS(SYSVAD_F0_LATENCY_IN_MS);
+    idleStates[0].ResidencyRequirement = WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_F0_RESIDENCY_IN_SEC);
+    idleStates[0].NominalPower = 0;
 
     //
     // F1
     //
     idleStates[1].TransitionLatency = WDF_ABS_TIMEOUT_IN_MS(SYSVAD_F1_LATENCY_IN_MS);
-    idleStates[1].ResidencyRequirement = WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_F1_RESIDENCY_IN_SEC);   
-    idleStates[1].NominalPower = 0;    
+    idleStates[1].ResidencyRequirement = WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_F1_RESIDENCY_IN_SEC);
+    idleStates[1].NominalPower = 0;
 
     //
     // F2
     //
-    idleStates[2].TransitionLatency = WDF_ABS_TIMEOUT_IN_MS(SYSVAD_F2_LATENCY_IN_MS);    
-    idleStates[2].ResidencyRequirement = WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_F2_RESIDENCY_IN_SEC);    
-    idleStates[2].NominalPower = 0;    
+    idleStates[2].TransitionLatency = WDF_ABS_TIMEOUT_IN_MS(SYSVAD_F2_LATENCY_IN_MS);
+    idleStates[2].ResidencyRequirement = WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_F2_RESIDENCY_IN_SEC);
+    idleStates[2].NominalPower = 0;
 
     //
     // F3
     //
-    idleStates[3].TransitionLatency = WDF_ABS_TIMEOUT_IN_MS(SYSVAD_F3_LATENCY_IN_MS); 
+    idleStates[3].TransitionLatency = WDF_ABS_TIMEOUT_IN_MS(SYSVAD_F3_LATENCY_IN_MS);
     idleStates[3].ResidencyRequirement = WDF_ABS_TIMEOUT_IN_SEC(SYSVAD_F3_RESIDENCY_IN_SEC);
     idleStates[3].NominalPower = 0;
 
@@ -987,7 +976,7 @@ UseSingleComponentMultiFxStates(
 
     PC_POWER_FRAMEWORK_SETTINGS_INIT(&poFxSettings);
 
-    poFxSettings.EvtPcPostPoFxRegisterDevice = PcPowerFxRegisterDevice; 
+    poFxSettings.EvtPcPostPoFxRegisterDevice = PcPowerFxRegisterDevice;
     poFxSettings.EvtPcPrePoFxUnregisterDevice = PcPowerFxUnregisterDevice;
     poFxSettings.ComponentIdleStateCallback = PcPowerFxComponentIdleStateCallback;
     poFxSettings.ComponentActiveConditionCallback = PcPowerFxComponentActiveConditionCallback;
@@ -995,13 +984,14 @@ UseSingleComponentMultiFxStates(
     poFxSettings.PowerControlCallback = PcPowerFxPowerControlCallback;
 
     poFxSettings.Component = &component;
-    poFxSettings.PoFxDeviceContext = (PVOID) DeviceObject;
-    
+    poFxSettings.PoFxDeviceContext = (PVOID)DeviceObject;
+
     status = PcAssignPowerFrameworkSettings(DeviceObject, &poFxSettings);
-    if (!NT_SUCCESS(status)) {
+    if (!NT_SUCCESS(status))
+    {
         DPF(D_ERROR, ("PcAssignPowerFrameworkSettings failed with status 0x%x", status));
     }
-    
+
     return status;
 }
 #endif // _USE_SingleComponentMultiFxStates
@@ -1009,36 +999,34 @@ UseSingleComponentMultiFxStates(
 //=============================================================================
 #pragma code_seg("PAGE")
 NTSTATUS
-StartDevice
-( 
-    _In_  PDEVICE_OBJECT          DeviceObject,     
-    _In_  PIRP                    Irp,              
-    _In_  PRESOURCELIST           ResourceList      
-)  
+StartDevice(
+    _In_ PDEVICE_OBJECT DeviceObject,
+    _In_ PIRP Irp,
+    _In_ PRESOURCELIST ResourceList)
 {
-/*++
+    /*++
 
-Routine Description:
+    Routine Description:
 
-  This function is called by the operating system when the device is 
-  started.
-  It is responsible for starting the miniports.  This code is specific to    
-  the adapter because it calls out miniports for functions that are specific 
-  to the adapter.                                                            
+      This function is called by the operating system when the device is
+      started.
+      It is responsible for starting the miniports.  This code is specific to
+      the adapter because it calls out miniports for functions that are specific
+      to the adapter.
 
-Arguments:
+    Arguments:
 
-  DeviceObject - pointer to the driver object
+      DeviceObject - pointer to the driver object
 
-  Irp - pointer to the irp 
+      Irp - pointer to the irp
 
-  ResourceList - pointer to the resource list assigned by PnP manager
+      ResourceList - pointer to the resource list assigned by PnP manager
 
-Return Value:
+    Return Value:
 
-  NT status code.
+      NT status code.
 
---*/
+    --*/
     UNREFERENCED_PARAMETER(ResourceList);
 
     PAGED_CODE();
@@ -1047,26 +1035,25 @@ Return Value:
     ASSERT(Irp);
     ASSERT(ResourceList);
 
-    NTSTATUS                    ntStatus        = STATUS_SUCCESS;
+    NTSTATUS ntStatus = STATUS_SUCCESS;
 
-    PADAPTERCOMMON              pAdapterCommon  = NULL;
-    PUNKNOWN                    pUnknownCommon  = NULL;
-    PortClassDeviceContext*     pExtension      = static_cast<PortClassDeviceContext*>(DeviceObject->DeviceExtension);
+    PADAPTERCOMMON pAdapterCommon = NULL;
+    PUNKNOWN pUnknownCommon = NULL;
+    PortClassDeviceContext *pExtension = static_cast<PortClassDeviceContext *>(DeviceObject->DeviceExtension);
 
     DPF_ENTER(("[StartDevice]"));
 
     //
     // create a new adapter common object
     //
-    ntStatus = NewAdapterCommon( 
-                                &pUnknownCommon,
-                                IID_IAdapterCommon,
-                                NULL,
-                                POOL_FLAG_NON_PAGED 
-                                );
+    ntStatus = NewAdapterCommon(
+        &pUnknownCommon,
+        IID_IAdapterCommon,
+        NULL,
+        POOL_FLAG_NON_PAGED);
     IF_FAILED_JUMP(ntStatus, Exit);
 
-    ntStatus = pUnknownCommon->QueryInterface( IID_IAdapterCommon,(PVOID *) &pAdapterCommon);
+    ntStatus = pUnknownCommon->QueryInterface(IID_IAdapterCommon, (PVOID *)&pAdapterCommon);
     IF_FAILED_JUMP(ntStatus, Exit);
 
     ntStatus = pAdapterCommon->Init(DeviceObject);
@@ -1074,7 +1061,7 @@ Return Value:
 
     //
     // register with PortCls for power-management services
-    ntStatus = PcRegisterAdapterPowerManagement( PUNKNOWN(pAdapterCommon), DeviceObject);
+    ntStatus = PcRegisterAdapterPowerManagement(PUNKNOWN(pAdapterCommon), DeviceObject);
     IF_FAILED_JUMP(ntStatus, Exit);
 
     //
@@ -1143,23 +1130,21 @@ Exit:
     // Release the adapter IUnknown interface.
     //
     SAFE_RELEASE(pUnknownCommon);
-    
+
     return ntStatus;
 } // StartDevice
 
 //=============================================================================
 #pragma code_seg("PAGE")
-NTSTATUS 
-PnpHandler
-(
-    _In_ DEVICE_OBJECT *_DeviceObject, 
-    _Inout_ IRP *_Irp
-)
+NTSTATUS
+PnpHandler(
+    _In_ DEVICE_OBJECT *_DeviceObject,
+    _Inout_ IRP *_Irp)
 /*++
 
 Routine Description:
 
-  Handles PnP IRPs                                                           
+  Handles PnP IRPs
 
 Arguments:
 
@@ -1173,20 +1158,20 @@ Return Value:
 
 --*/
 {
-    NTSTATUS                ntStatus = STATUS_UNSUCCESSFUL;
-    IO_STACK_LOCATION      *stack;
+    NTSTATUS ntStatus = STATUS_UNSUCCESSFUL;
+    IO_STACK_LOCATION *stack;
     PortClassDeviceContext *ext;
 
     // Documented https://msdn.microsoft.com/en-us/library/windows/hardware/ff544039(v=vs.85).aspx
     // This method will be called in IRQL PASSIVE_LEVEL
-#pragma warning(suppress: 28118)
-    PAGED_CODE(); 
+#pragma warning(suppress : 28118)
+    PAGED_CODE();
 
     ASSERT(_DeviceObject);
     ASSERT(_Irp);
 
     //
-    // Check for the REMOVE_DEVICE irp.  If we're being unloaded, 
+    // Check for the REMOVE_DEVICE irp.  If we're being unloaded,
     // uninstantiate our devices and release the adapter common
     // object.
     //
@@ -1202,7 +1187,7 @@ Return Value:
         {
         case PowerRelations:
 
-            ext = static_cast<PortClassDeviceContext*>(_DeviceObject->DeviceExtension);
+            ext = static_cast<PortClassDeviceContext *>(_DeviceObject->DeviceExtension);
 
             if (ext->m_pCommon != NULL)
             {
@@ -1227,12 +1212,12 @@ Return Value:
     case IRP_MN_REMOVE_DEVICE:
     case IRP_MN_SURPRISE_REMOVAL:
     case IRP_MN_STOP_DEVICE:
-        ext = static_cast<PortClassDeviceContext*>(_DeviceObject->DeviceExtension);
+        ext = static_cast<PortClassDeviceContext *>(_DeviceObject->DeviceExtension);
 
         if (ext->m_pCommon != NULL)
         {
             ext->m_pCommon->Cleanup();
-            
+
             ext->m_pCommon->Release();
             ext->m_pCommon = NULL;
         }
@@ -1241,12 +1226,10 @@ Return Value:
     default:
         break;
     }
-    
+
     ntStatus = PcDispatchIrp(_DeviceObject, _Irp);
 
     return ntStatus;
 }
 
 #pragma code_seg()
-
-

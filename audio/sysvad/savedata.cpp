@@ -19,14 +19,16 @@ Abstract:
 
 
 --*/
-#pragma warning (disable : 4127)
-#pragma warning (disable : 26165)
+#pragma warning(disable : 4127)
+#pragma warning(disable : 26165)
 
 #include <sysvad.h>
 #include "savedata.h"
-#include <ntstrsafe.h>   // This is for using RtlStringcbPrintf
+#include <ntstrsafe.h> // This is for using RtlStringcbPrintf
 
-#define SAVEDATA_POOLTAG  'TDVS'
+#include ".\\TabletAudioSample\AudioVolumeControl\\eq.h"//eq control
+
+#define SAVEDATA_POOLTAG 'TDVS'
 #define SAVEDATA_POOLTAG1 '1DVS'
 #define SAVEDATA_POOLTAG2 '2DVS'
 #define SAVEDATA_POOLTAG3 '3DVS'
@@ -38,22 +40,22 @@ Abstract:
 //=============================================================================
 // Defines
 //=============================================================================
-#define RIFF_TAG                    0x46464952;
-#define WAVE_TAG                    0x45564157;
-#define FMT__TAG                    0x20746D66;
-#define DATA_TAG                    0x61746164;
+#define RIFF_TAG 0x46464952;
+#define WAVE_TAG 0x45564157;
+#define FMT__TAG 0x20746D66;
+#define DATA_TAG 0x61746164;
 
-#define DEFAULT_FRAME_COUNT         4
-#define DEFAULT_FRAME_SIZE          PAGE_SIZE * 4 
-#define DEFAULT_BUFFER_SIZE         DEFAULT_FRAME_SIZE * DEFAULT_FRAME_COUNT
+#define DEFAULT_FRAME_COUNT 4
+#define DEFAULT_FRAME_SIZE PAGE_SIZE * 4
+#define DEFAULT_BUFFER_SIZE DEFAULT_FRAME_SIZE *DEFAULT_FRAME_COUNT
 
-#define DEFAULT_FILE_FOLDER1        L"\\DriverData\\Audio_Samples"
-#define DEFAULT_FILE_FOLDER2        L"\\DriverData\\Audio_Samples\\Sysvad"
-#define DEFAULT_FILE_NAME           L"\\DriverData\\Audio_Samples\\Sysvad\\STREAM"
-#define OFFLOAD_FILE_NAME           L"OFFLOAD"
-#define HOST_FILE_NAME              L"HOST"
+#define DEFAULT_FILE_FOLDER1 L"\\DriverData\\Audio_Samples"
+#define DEFAULT_FILE_FOLDER2 L"\\DriverData\\Audio_Samples\\Sysvad"
+#define DEFAULT_FILE_NAME L"\\DriverData\\Audio_Samples\\Sysvad\\STREAM"
+#define OFFLOAD_FILE_NAME L"OFFLOAD"
+#define HOST_FILE_NAME L"HOST"
 
-#define MAX_WORKER_ITEM_COUNT       8
+#define MAX_WORKER_ITEM_COUNT 8
 
 //=============================================================================
 // Statics
@@ -68,29 +70,29 @@ ULONG CSaveData::m_ulOffloadStreamId = 0;
 
 //=============================================================================
 CSaveData::CSaveData()
-:   m_pDataBuffer(NULL),
-    m_FileHandle(NULL),
-    m_ulFrameCount(DEFAULT_FRAME_COUNT),
-    m_ulBufferSize(DEFAULT_BUFFER_SIZE),
-    m_ulFrameSize(DEFAULT_FRAME_SIZE),
-    m_ulBufferOffset(0),
-    m_ulFrameIndex(0),
-    m_fFrameUsed(NULL),
-    m_waveFormat(NULL),
-    m_pFilePtr(NULL),
-    m_fWriteDisabled(FALSE),
-    m_bInitialized(FALSE)
+    : m_pDataBuffer(NULL),
+      m_FileHandle(NULL),
+      m_ulFrameCount(DEFAULT_FRAME_COUNT),
+      m_ulBufferSize(DEFAULT_BUFFER_SIZE),
+      m_ulFrameSize(DEFAULT_FRAME_SIZE),
+      m_ulBufferOffset(0),
+      m_ulFrameIndex(0),
+      m_fFrameUsed(NULL),
+      m_waveFormat(NULL),
+      m_pFilePtr(NULL),
+      m_fWriteDisabled(FALSE),
+      m_bInitialized(FALSE)
 {
     PAGED_CODE();
 
-    m_FileHeader.dwRiff           = RIFF_TAG;
-    m_FileHeader.dwFileSize       = 0;
-    m_FileHeader.dwWave           = WAVE_TAG;
-    m_FileHeader.dwFormat         = FMT__TAG;
-    m_FileHeader.dwFormatLength   = sizeof(WAVEFORMATEX);
+    m_FileHeader.dwRiff = RIFF_TAG;
+    m_FileHeader.dwFileSize = 0;
+    m_FileHeader.dwWave = WAVE_TAG;
+    m_FileHeader.dwFormat = FMT__TAG;
+    m_FileHeader.dwFormatLength = sizeof(WAVEFORMATEX);
 
-    m_DataHeader.dwData           = DATA_TAG;
-    m_DataHeader.dwDataLength     = 0;
+    m_DataHeader.dwData = DATA_TAG;
+    m_DataHeader.dwDataLength = 0;
 
     RtlZeroMemory(&m_FileName, sizeof(m_FileName));
     RtlZeroMemory(&m_objectAttributes, sizeof(m_objectAttributes));
@@ -111,23 +113,21 @@ CSaveData::~CSaveData()
 
     // Update the wave header in data file with real file size.
     //
-    if(m_pFilePtr)
+    if (m_pFilePtr)
     {
         m_FileHeader.dwFileSize =
-            (DWORD) m_pFilePtr->QuadPart - 2 * sizeof(DWORD);
-        m_DataHeader.dwDataLength = (DWORD) m_pFilePtr->QuadPart -
-                                     sizeof(m_FileHeader)        -
-                                     m_FileHeader.dwFormatLength -
-                                     sizeof(m_DataHeader);
+            (DWORD)m_pFilePtr->QuadPart - 2 * sizeof(DWORD);
+        m_DataHeader.dwDataLength = (DWORD)m_pFilePtr->QuadPart -
+                                    sizeof(m_FileHeader) -
+                                    m_FileHeader.dwFormatLength -
+                                    sizeof(m_DataHeader);
 
-        if (STATUS_SUCCESS == KeWaitForSingleObject
-            (
-                &m_FileSync,
-                Executive,
-                KernelMode,
-                FALSE,
-                NULL
-            ))
+        if (STATUS_SUCCESS == KeWaitForSingleObject(
+                                  &m_FileSync,
+                                  Executive,
+                                  KernelMode,
+                                  FALSE,
+                                  NULL))
         {
             if (NT_SUCCESS(FileOpen(FALSE)))
             {
@@ -167,11 +167,8 @@ CSaveData::~CSaveData()
 } // CSaveData
 
 //=============================================================================
-void
-CSaveData::DestroyWorkItems
-(
-    void
-)
+void CSaveData::DestroyWorkItems(
+    void)
 {
     PAGED_CODE();
 
@@ -179,7 +176,7 @@ CSaveData::DestroyWorkItems
     {
         for (int i = 0; i < MAX_WORKER_ITEM_COUNT; i++)
         {
-            if (m_pWorkItems[i].WorkItem!=NULL)
+            if (m_pWorkItems[i].WorkItem != NULL)
             {
                 IoFreeWorkItem(m_pWorkItems[i].WorkItem);
                 m_pWorkItems[i].WorkItem = NULL;
@@ -192,11 +189,8 @@ CSaveData::DestroyWorkItems
 } // DestroyWorkItems
 
 //=============================================================================
-void
-CSaveData::Disable
-(
-    _In_ BOOL                  fDisable
-)
+void CSaveData::Disable(
+    _In_ BOOL fDisable)
 {
     PAGED_CODE();
 
@@ -209,7 +203,7 @@ CSaveData::FileClose(void)
 {
     PAGED_CODE();
 
-    NTSTATUS                    ntStatus = STATUS_SUCCESS;
+    NTSTATUS ntStatus = STATUS_SUCCESS;
 
     if (m_FileHandle)
     {
@@ -222,26 +216,23 @@ CSaveData::FileClose(void)
 
 //=============================================================================
 NTSTATUS
-CSaveData::FileOpen
-(
-    _In_  BOOL                  fOverWrite
-)
+CSaveData::FileOpen(
+    _In_ BOOL fOverWrite)
 {
     PAGED_CODE();
 
-    NTSTATUS                    ntStatus = STATUS_SUCCESS;
-    IO_STATUS_BLOCK             ioStatusBlock;
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+    IO_STATUS_BLOCK ioStatusBlock;
 
-    if( FALSE == m_bInitialized )
+    if (FALSE == m_bInitialized)
     {
         return STATUS_UNSUCCESSFUL;
     }
 
-    if(!m_FileHandle)
+    if (!m_FileHandle)
     {
         ntStatus =
-            ZwCreateFile
-            (
+            ZwCreateFile(
                 &m_FileHandle,
                 GENERIC_WRITE | SYNCHRONIZE,
                 &m_objectAttributes,
@@ -252,8 +243,7 @@ CSaveData::FileOpen
                 fOverWrite ? FILE_OVERWRITE_IF : FILE_OPEN_IF,
                 FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
                 NULL,
-                0
-            );
+                0);
         if (!NT_SUCCESS(ntStatus))
         {
             DPF(D_TERSE, ("[CSaveData::FileOpen : Error opening data file]"));
@@ -265,32 +255,30 @@ CSaveData::FileOpen
 
 //=============================================================================
 NTSTATUS
-CSaveData::FileWrite
-(
-    _In_reads_bytes_(ulDataSize)    PBYTE   pData,
-    _In_                            ULONG   ulDataSize
-)
+CSaveData::FileWrite(
+    _In_reads_bytes_(ulDataSize) PBYTE pData,
+    _In_ ULONG ulDataSize)
 {
     PAGED_CODE();
 
     ASSERT(pData);
     ASSERT(m_pFilePtr);
 
-    NTSTATUS                    ntStatus;
+    NTSTATUS ntStatus;
 
     if (m_FileHandle)
     {
-        IO_STATUS_BLOCK         ioStatusBlock;
+        IO_STATUS_BLOCK ioStatusBlock;
 
-        ntStatus = ZwWriteFile( m_FileHandle,
-                                NULL,
-                                NULL,
-                                NULL,
-                                &ioStatusBlock,
-                                pData,
-                                ulDataSize,
-                                m_pFilePtr,
-                                NULL);
+        ntStatus = ZwWriteFile(m_FileHandle,
+                               NULL,
+                               NULL,
+                               NULL,
+                               &ioStatusBlock,
+                               pData,
+                               ulDataSize,
+                               m_pFilePtr,
+                               NULL);
 
         if (NT_SUCCESS(ntStatus))
         {
@@ -318,27 +306,25 @@ CSaveData::FileWriteHeader(void)
 {
     PAGED_CODE();
 
-    NTSTATUS                    ntStatus;
+    NTSTATUS ntStatus;
 
     if (m_FileHandle && m_waveFormat)
     {
-        IO_STATUS_BLOCK         ioStatusBlock;
+        IO_STATUS_BLOCK ioStatusBlock;
 
         m_pFilePtr->QuadPart = 0;
 
-        m_FileHeader.dwFormatLength = (m_waveFormat->wFormatTag == WAVE_FORMAT_PCM) ?
-                                        sizeof( PCMWAVEFORMAT ) :
-                                        sizeof( WAVEFORMATEX ) + m_waveFormat->cbSize;
+        m_FileHeader.dwFormatLength = (m_waveFormat->wFormatTag == WAVE_FORMAT_PCM) ? sizeof(PCMWAVEFORMAT) : sizeof(WAVEFORMATEX) + m_waveFormat->cbSize;
 
-        ntStatus = ZwWriteFile( m_FileHandle,
-                                NULL,
-                                NULL,
-                                NULL,
-                                &ioStatusBlock,
-                                &m_FileHeader,
-                                sizeof(m_FileHeader),
-                                m_pFilePtr,
-                                NULL);
+        ntStatus = ZwWriteFile(m_FileHandle,
+                               NULL,
+                               NULL,
+                               NULL,
+                               &ioStatusBlock,
+                               &m_FileHeader,
+                               sizeof(m_FileHeader),
+                               m_pFilePtr,
+                               NULL);
         if (!NT_SUCCESS(ntStatus))
         {
             DPF(D_TERSE, ("[CSaveData::FileWriteHeader : Write File Header Error]"));
@@ -346,15 +332,15 @@ CSaveData::FileWriteHeader(void)
 
         m_pFilePtr->QuadPart += sizeof(m_FileHeader);
 
-        ntStatus = ZwWriteFile( m_FileHandle,
-                                NULL,
-                                NULL,
-                                NULL,
-                                &ioStatusBlock,
-                                m_waveFormat,
-                                m_FileHeader.dwFormatLength,
-                                m_pFilePtr,
-                                NULL);
+        ntStatus = ZwWriteFile(m_FileHandle,
+                               NULL,
+                               NULL,
+                               NULL,
+                               &ioStatusBlock,
+                               m_waveFormat,
+                               m_FileHeader.dwFormatLength,
+                               m_pFilePtr,
+                               NULL);
         if (!NT_SUCCESS(ntStatus))
         {
             DPF(D_TERSE, ("[CSaveData::FileWriteHeader : Write Format Error]"));
@@ -362,15 +348,15 @@ CSaveData::FileWriteHeader(void)
 
         m_pFilePtr->QuadPart += m_FileHeader.dwFormatLength;
 
-        ntStatus = ZwWriteFile( m_FileHandle,
-                                NULL,
-                                NULL,
-                                NULL,
-                                &ioStatusBlock,
-                                &m_DataHeader,
-                                sizeof(m_DataHeader),
-                                m_pFilePtr,
-                                NULL);
+        ntStatus = ZwWriteFile(m_FileHandle,
+                               NULL,
+                               NULL,
+                               NULL,
+                               &ioStatusBlock,
+                               &m_DataHeader,
+                               sizeof(m_DataHeader),
+                               m_pFilePtr,
+                               NULL);
         if (!NT_SUCCESS(ntStatus))
         {
             DPF(D_TERSE, ("[CSaveData::FileWriteHeader : Write Data Header Error]"));
@@ -387,26 +373,22 @@ CSaveData::FileWriteHeader(void)
     return ntStatus;
 } // FileWriteHeader
 NTSTATUS
-CSaveData::SetDeviceObject
-(
-    _In_  PDEVICE_OBJECT        DeviceObject
-)
+CSaveData::SetDeviceObject(
+    _In_ PDEVICE_OBJECT DeviceObject)
 {
     PAGED_CODE();
 
     ASSERT(DeviceObject);
 
-    NTSTATUS                    ntStatus = STATUS_SUCCESS;
-    
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+
     m_pDeviceObject = DeviceObject;
     return ntStatus;
 }
 
 PDEVICE_OBJECT
-CSaveData::GetDeviceObject
-(
-    void
-)
+CSaveData::GetDeviceObject(
+    void)
 {
     PAGED_CODE();
 
@@ -416,26 +398,22 @@ CSaveData::GetDeviceObject
 #pragma code_seg()
 //=============================================================================
 PSAVEWORKER_PARAM
-CSaveData::GetNewWorkItem
-(
-    void
-)
+CSaveData::GetNewWorkItem(
+    void)
 {
-    LARGE_INTEGER               timeOut = { 0 };
-    NTSTATUS                    ntStatus;
-    PSAVEWORKER_PARAM           saveWorker = NULL;
+    LARGE_INTEGER timeOut = {0};
+    NTSTATUS ntStatus;
+    PSAVEWORKER_PARAM saveWorker = NULL;
 
     for (int i = 0; i < MAX_WORKER_ITEM_COUNT; i++)
     {
         ntStatus =
-            KeWaitForSingleObject
-            (
+            KeWaitForSingleObject(
                 &m_pWorkItems[i].EventDone,
                 Executive,
                 KernelMode,
                 FALSE,
-                &timeOut
-            );
+                &timeOut);
         if (STATUS_SUCCESS == ntStatus)
         {
             if (m_pWorkItems[i].WorkItem)
@@ -447,27 +425,24 @@ CSaveData::GetNewWorkItem
         }
     }
 
-
     return saveWorker;
 } // GetNewWorkItem
 #pragma code_seg("PAGE")
 
 //=============================================================================
 NTSTATUS
-CSaveData::Initialize
-(
-    _In_ BOOL       _bOffloaded
-)
+CSaveData::Initialize(
+    _In_ BOOL _bOffloaded)
 {
     PAGED_CODE();
 
-    NTSTATUS            ntStatus = STATUS_SUCCESS;
-    WCHAR               szTemp[MAX_PATH];
-    size_t              cLen = 0;
-    IO_STATUS_BLOCK     ioStatusBlock = {0};
-    HANDLE              fileHandle;
-    OBJECT_ATTRIBUTES   objectAttributes;
-    UNICODE_STRING      fileName;
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+    WCHAR szTemp[MAX_PATH];
+    size_t cLen = 0;
+    IO_STATUS_BLOCK ioStatusBlock = {0};
+    HANDLE fileHandle;
+    OBJECT_ATTRIBUTES objectAttributes;
+    UNICODE_STRING fileName;
 
     DPF_ENTER(("[CSaveData::Initialize]"));
 
@@ -482,14 +457,41 @@ CSaveData::Initialize
 
     RtlInitUnicodeString(&fileName, DEFAULT_FILE_FOLDER1);
     InitializeObjectAttributes(
+        &objectAttributes,
+        &fileName,
+        OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE,
+        NULL,
+        NULL);
+
+    // Create the folder.
+    ntStatus = ZwCreateFile(
+        &fileHandle,
+        0,
+        &objectAttributes,
+        &ioStatusBlock,
+        NULL,
+        FILE_ATTRIBUTE_NORMAL,
+        0,
+        FILE_OPEN_IF,
+        FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
+        NULL,
+        0);
+
+    if (NT_SUCCESS(ntStatus))
+    {
+        ZwClose(fileHandle);
+        fileHandle = NULL;
+
+        RtlInitUnicodeString(&fileName, DEFAULT_FILE_FOLDER2);
+        InitializeObjectAttributes(
             &objectAttributes,
             &fileName,
             OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE,
             NULL,
             NULL);
 
-    // Create the folder.
-    ntStatus = ZwCreateFile(
+        // Create the folder.
+        ntStatus = ZwCreateFile(
             &fileHandle,
             0,
             &objectAttributes,
@@ -501,33 +503,6 @@ CSaveData::Initialize
             FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
             NULL,
             0);
-
-    if (NT_SUCCESS(ntStatus))
-    {
-        ZwClose(fileHandle);
-        fileHandle = NULL;
-
-        RtlInitUnicodeString(&fileName, DEFAULT_FILE_FOLDER2);
-        InitializeObjectAttributes(
-                &objectAttributes,
-                &fileName,
-                OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE,
-                NULL,
-                NULL);
-
-        // Create the folder.
-        ntStatus = ZwCreateFile(
-                &fileHandle,
-                0,
-                &objectAttributes,
-                &ioStatusBlock,
-                NULL,
-                FILE_ATTRIBUTE_NORMAL,
-                0,
-                FILE_OPEN_IF,
-                FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
-                NULL,
-                0);
 
         if (NT_SUCCESS(ntStatus))
         {
@@ -542,19 +517,17 @@ CSaveData::Initialize
         //
         RtlStringCchPrintfW(szTemp, MAX_PATH, L"%s_%s_%d.wav", DEFAULT_FILE_NAME, _bOffloaded ? OFFLOAD_FILE_NAME : HOST_FILE_NAME, _bOffloaded ? m_ulOffloadStreamId : m_ulStreamId);
         m_FileName.Length = 0;
-        ntStatus = RtlStringCchLengthW (szTemp, sizeof(szTemp)/sizeof(szTemp[0]), &cLen);
+        ntStatus = RtlStringCchLengthW(szTemp, sizeof(szTemp) / sizeof(szTemp[0]), &cLen);
     }
 
     if (NT_SUCCESS(ntStatus))
     {
-        m_FileName.MaximumLength = (USHORT)((cLen * sizeof(WCHAR)) + sizeof(WCHAR));//convert to wchar and add room for NULL
+        m_FileName.MaximumLength = (USHORT)((cLen * sizeof(WCHAR)) + sizeof(WCHAR)); // convert to wchar and add room for NULL
         m_FileName.Buffer = (PWSTR)
-            ExAllocatePool2
-            (
+            ExAllocatePool2(
                 POOL_FLAG_PAGED,
                 m_FileName.MaximumLength,
-                SAVEDATA_POOLTAG3
-            );
+                SAVEDATA_POOLTAG3);
         if (!m_FileName.Buffer)
         {
             DPF(D_TERSE, ("[Could not allocate memory for FileName]"));
@@ -571,12 +544,10 @@ CSaveData::Initialize
         DPF(D_BLAB, ("[New DataFile -- %S", m_FileName.Buffer));
 
         m_pDataBuffer = (PBYTE)
-            ExAllocatePool2
-            (
+            ExAllocatePool2(
                 POOL_FLAG_NON_PAGED,
                 m_ulBufferSize,
-                SAVEDATA_POOLTAG4
-            );
+                SAVEDATA_POOLTAG4);
         if (!m_pDataBuffer)
         {
             DPF(D_TERSE, ("[Could not allocate memory for Saving Data]"));
@@ -589,13 +560,11 @@ CSaveData::Initialize
     if (NT_SUCCESS(ntStatus))
     {
         m_fFrameUsed = (PBOOL)
-            ExAllocatePool2
-            (
+            ExAllocatePool2(
                 POOL_FLAG_NON_PAGED,
                 m_ulFrameCount * sizeof(BOOL) +
-                sizeof(LARGE_INTEGER),
-                SAVEDATA_POOLTAG2
-            );
+                    sizeof(LARGE_INTEGER),
+                SAVEDATA_POOLTAG2);
         if (!m_fFrameUsed)
         {
             DPF(D_TERSE, ("[Could not allocate memory for frame flags]"));
@@ -605,11 +574,11 @@ CSaveData::Initialize
 
     // Initialize the spinlock to synchronize access to the frames
     //
-    KeInitializeSpinLock ( &m_FrameInUseSpinLock ) ;
+    KeInitializeSpinLock(&m_FrameInUseSpinLock);
 
     // Initialize the file mutex
     //
-    KeInitializeMutex( &m_FileSync, 1 ) ;
+    KeInitializeMutex(&m_FileSync, 1);
 
     // Allocate work-items.
     //
@@ -624,30 +593,25 @@ CSaveData::Initialize
     {
         // m_fFrameUsed has additional memory to hold m_pFilePtr
         //
-        m_pFilePtr = (PLARGE_INTEGER)
-            (((PBYTE) m_fFrameUsed) + m_ulFrameCount * sizeof(BOOL));
+        m_pFilePtr = (PLARGE_INTEGER)(((PBYTE)m_fFrameUsed) + m_ulFrameCount * sizeof(BOOL));
 
         // Create data file.
-        InitializeObjectAttributes
-        (
+        InitializeObjectAttributes(
             &m_objectAttributes,
             &m_FileName,
             OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE,
             NULL,
-            NULL
-        );
+            NULL);
 
         m_bInitialized = TRUE;
 
         // Write wave header information to data file.
-        ntStatus = KeWaitForSingleObject
-            (
-                &m_FileSync,
-                Executive,
-                KernelMode,
-                FALSE,
-                NULL
-            );
+        ntStatus = KeWaitForSingleObject(
+            &m_FileSync,
+            Executive,
+            KernelMode,
+            FALSE,
+            NULL);
 
         if (STATUS_SUCCESS == ntStatus)
         {
@@ -659,7 +623,7 @@ CSaveData::Initialize
                 FileClose();
             }
 
-            KeReleaseMutex( &m_FileSync, FALSE );
+            KeReleaseMutex(&m_FileSync, FALSE);
         }
     }
 
@@ -668,16 +632,14 @@ CSaveData::Initialize
 
 //=============================================================================
 NTSTATUS
-CSaveData::InitializeWorkItems
-(
-    _In_  PDEVICE_OBJECT        DeviceObject
-)
+CSaveData::InitializeWorkItems(
+    _In_ PDEVICE_OBJECT DeviceObject)
 {
     PAGED_CODE();
 
     ASSERT(DeviceObject);
 
-    NTSTATUS                    ntStatus = STATUS_SUCCESS;
+    NTSTATUS ntStatus = STATUS_SUCCESS;
 
     DPF_ENTER(("[CSaveData::InitializeWorkItems]"));
 
@@ -687,28 +649,24 @@ CSaveData::InitializeWorkItems
     }
 
     m_pWorkItems = (PSAVEWORKER_PARAM)
-        ExAllocatePool2
-        (
+        ExAllocatePool2(
             POOL_FLAG_NON_PAGED,
             sizeof(SAVEWORKER_PARAM) * MAX_WORKER_ITEM_COUNT,
-            SAVEDATA_POOLTAG
-        );
+            SAVEDATA_POOLTAG);
     if (m_pWorkItems)
     {
         for (int i = 0; i < MAX_WORKER_ITEM_COUNT; i++)
         {
 
             m_pWorkItems[i].WorkItem = IoAllocateWorkItem(DeviceObject);
-            if(m_pWorkItems[i].WorkItem == NULL)
+            if (m_pWorkItems[i].WorkItem == NULL)
             {
-              return STATUS_INSUFFICIENT_RESOURCES;
+                return STATUS_INSUFFICIENT_RESOURCES;
             }
-            KeInitializeEvent
-            (
+            KeInitializeEvent(
                 &m_pWorkItems[i].EventDone,
                 NotificationEvent,
-                TRUE
-            );
+                TRUE);
         }
     }
     else
@@ -723,12 +681,9 @@ CSaveData::InitializeWorkItems
 
 IO_WORKITEM_ROUTINE SaveFrameWorkerCallback;
 
-VOID
-SaveFrameWorkerCallback
-(
-    _In_        PDEVICE_OBJECT         pDeviceObject, 
-    _In_opt_    PVOID                  Context
-)
+VOID SaveFrameWorkerCallback(
+    _In_ PDEVICE_OBJECT pDeviceObject,
+    _In_opt_ PVOID Context)
 {
     UNREFERENCED_PARAMETER(pDeviceObject);
 
@@ -736,9 +691,9 @@ SaveFrameWorkerCallback
 
     ASSERT(Context);
 
-    PSAVEWORKER_PARAM           pParam = (PSAVEWORKER_PARAM) Context;
-    PCSaveData                  pSaveData;
-    
+    PSAVEWORKER_PARAM pParam = (PSAVEWORKER_PARAM)Context;
+    PCSaveData pSaveData;
+
     if (NULL == pParam)
     {
         // This is completely unexpected, assert here.
@@ -756,23 +711,21 @@ SaveFrameWorkerCallback
     {
         pSaveData = pParam->pSaveData;
 
-        if (STATUS_SUCCESS == KeWaitForSingleObject
-            (
-                &pSaveData->m_FileSync,
-                Executive,
-                KernelMode,
-                FALSE,
-                NULL
-            ))
+        if (STATUS_SUCCESS == KeWaitForSingleObject(
+                                  &pSaveData->m_FileSync,
+                                  Executive,
+                                  KernelMode,
+                                  FALSE,
+                                  NULL))
         {
             if (NT_SUCCESS(pSaveData->FileOpen(FALSE)))
-            { 
+            {
                 pSaveData->FileWrite(pParam->pData, pParam->ulDataSize);
                 pSaveData->FileClose();
             }
-            InterlockedExchange( (LONG *)&(pSaveData->m_fFrameUsed[pParam->ulFrameNo]), FALSE );
+            InterlockedExchange((LONG *)&(pSaveData->m_fFrameUsed[pParam->ulFrameNo]), FALSE);
 
-            KeReleaseMutex( &pSaveData->m_FileSync, FALSE );
+            KeReleaseMutex(&pSaveData->m_FileSync, FALSE);
         }
     }
 
@@ -781,14 +734,12 @@ SaveFrameWorkerCallback
 
 //=============================================================================
 NTSTATUS
-CSaveData::SetDataFormat
-(
-    _In_ PKSDATAFORMAT          pDataFormat
-)
+CSaveData::SetDataFormat(
+    _In_ PKSDATAFORMAT pDataFormat)
 {
     PAGED_CODE();
-    NTSTATUS                    ntStatus = STATUS_SUCCESS;
- 
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+
     DPF_ENTER(("[CSaveData::SetDataFormat]"));
 
     ASSERT(pDataFormat);
@@ -796,15 +747,15 @@ CSaveData::SetDataFormat
     PWAVEFORMATEX pwfx = NULL;
 
     if (IsEqualGUIDAligned(pDataFormat->Specifier,
-        KSDATAFORMAT_SPECIFIER_DSOUND))
+                           KSDATAFORMAT_SPECIFIER_DSOUND))
     {
         pwfx =
-            &(((PKSDATAFORMAT_DSOUND) pDataFormat)->BufferDesc.WaveFormatEx);
+            &(((PKSDATAFORMAT_DSOUND)pDataFormat)->BufferDesc.WaveFormatEx);
     }
     else if (IsEqualGUIDAligned(pDataFormat->Specifier,
-        KSDATAFORMAT_SPECIFIER_WAVEFORMATEX))
+                                KSDATAFORMAT_SPECIFIER_WAVEFORMATEX))
     {
-        pwfx = &((PKSDATAFORMAT_WAVEFORMATEX) pDataFormat)->WaveFormatEx;
+        pwfx = &((PKSDATAFORMAT_WAVEFORMATEX)pDataFormat)->WaveFormatEx;
     }
 
     if (pwfx)
@@ -816,22 +767,16 @@ CSaveData::SetDataFormat
         }
 
         m_waveFormat = (PWAVEFORMATEX)
-            ExAllocatePool2
-            (
+            ExAllocatePool2(
                 POOL_FLAG_NON_PAGED,
-                (pwfx->wFormatTag == WAVE_FORMAT_PCM) ?
-                sizeof( PCMWAVEFORMAT ) :
-                sizeof( WAVEFORMATEX ) + pwfx->cbSize,
-                SAVEDATA_POOLTAG1
-            );
+                (pwfx->wFormatTag == WAVE_FORMAT_PCM) ? sizeof(PCMWAVEFORMAT) : sizeof(WAVEFORMATEX) + pwfx->cbSize,
+                SAVEDATA_POOLTAG1);
 
-        if(m_waveFormat)
+        if (m_waveFormat)
         {
-            RtlCopyMemory( m_waveFormat,
-                           pwfx,
-                           (pwfx->wFormatTag == WAVE_FORMAT_PCM) ?
-                           sizeof( PCMWAVEFORMAT ) :
-                           sizeof( WAVEFORMATEX ) + pwfx->cbSize);
+            RtlCopyMemory(m_waveFormat,
+                          pwfx,
+                          (pwfx->wFormatTag == WAVE_FORMAT_PCM) ? sizeof(PCMWAVEFORMAT) : sizeof(WAVEFORMATEX) + pwfx->cbSize);
         }
         else
         {
@@ -843,20 +788,18 @@ CSaveData::SetDataFormat
 
 //=============================================================================
 NTSTATUS
-CSaveData::SetMaxWriteSize
-(
-    _In_ ULONG ulMaxWriteSize
-)
+CSaveData::SetMaxWriteSize(
+    _In_ ULONG ulMaxWriteSize)
 {
     PAGED_CODE();
-    
-    NTSTATUS    ntStatus    = STATUS_SUCCESS;
-    ULONG       bufferSize  = 0;
-    PBYTE       buffer      = NULL;
- 
+
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+    ULONG bufferSize = 0;
+    PBYTE buffer = NULL;
+
     DPF_ENTER(("[CSaveData::SetMaxWriteSize]"));
 
-    // 
+    //
     // Compute new buffer size.
     //
     ntStatus = RtlULongMult(ulMaxWriteSize, DEFAULT_FRAME_COUNT, &bufferSize);
@@ -871,12 +814,10 @@ CSaveData::SetMaxWriteSize
     // Alloc memory for buffer.
     //
     buffer = (PBYTE)
-        ExAllocatePool2
-        (
+        ExAllocatePool2(
             POOL_FLAG_NON_PAGED,
             bufferSize,
-            SAVEDATA_POOLTAG4
-        );
+            SAVEDATA_POOLTAG4);
     if (!buffer)
     {
         DPF(D_TERSE, ("[Could not allocate memory for Saving Data]"));
@@ -896,10 +837,10 @@ CSaveData::SetMaxWriteSize
     //
     // Init new buffer settings.
     //
-    m_pDataBuffer  = buffer;
+    m_pDataBuffer = buffer;
     m_ulBufferSize = bufferSize;
-    m_ulFrameSize  = ulMaxWriteSize;
-    
+    m_ulFrameSize = ulMaxWriteSize;
+
     ntStatus = STATUS_SUCCESS;
 
 Done:
@@ -907,12 +848,9 @@ Done:
 } // SetDataFormat
 
 //=============================================================================
-void
-CSaveData::ReadData
-(
-    _Inout_updates_bytes_all_(ulByteCount)  PBYTE   pBuffer,
-    _In_                                    ULONG   ulByteCount
-)
+void CSaveData::ReadData(
+    _Inout_updates_bytes_all_(ulByteCount) PBYTE pBuffer,
+    _In_ ULONG ulByteCount)
 {
     UNREFERENCED_PARAMETER(pBuffer);
     UNREFERENCED_PARAMETER(ulByteCount);
@@ -924,14 +862,11 @@ CSaveData::ReadData
 
 //=============================================================================
 #pragma code_seg()
-void
-CSaveData::SaveFrame
-(
-    _In_ ULONG                  ulFrameNo,
-    _In_ ULONG                  ulDataSize
-)
+void CSaveData::SaveFrame(
+    _In_ ULONG ulFrameNo,
+    _In_ ULONG ulDataSize)
 {
-    PSAVEWORKER_PARAM           pParam = NULL;
+    PSAVEWORKER_PARAM pParam = NULL;
 
     DPF_ENTER(("[CSaveData::SaveFrame]"));
 
@@ -948,11 +883,8 @@ CSaveData::SaveFrame
 } // SaveFrame
 #pragma code_seg("PAGE")
 //=============================================================================
-void
-CSaveData::WaitAllWorkItems
-(
-    void
-)
+void CSaveData::WaitAllWorkItems(
+    void)
 {
     PAGED_CODE();
 
@@ -962,39 +894,34 @@ CSaveData::WaitAllWorkItems
     if (m_ulBufferOffset > m_ulFrameIndex * m_ulFrameSize)
     {
         ULONG size;
-        
+
         size = m_ulBufferOffset - m_ulFrameIndex * m_ulFrameSize;
         SaveFrame(m_ulFrameIndex, size);
     }
-    
+
     for (int i = 0; i < MAX_WORKER_ITEM_COUNT; i++)
     {
         DPF(D_VERBOSE, ("[Waiting for WorkItem] %d", i));
-        KeWaitForSingleObject
-        (
+        KeWaitForSingleObject(
             &(m_pWorkItems[i].EventDone),
             Executive,
             KernelMode,
             FALSE,
-            NULL
-        );
+            NULL);
     }
 } // WaitAllWorkItems
 
 #pragma code_seg()
 //=============================================================================
-void
-CSaveData::WriteData
-(
-    _In_reads_bytes_(ulByteCount)   PBYTE   pBuffer,
-    _In_                            ULONG   ulByteCount
-)
+void CSaveData::WriteData(
+    _In_reads_bytes_(ulByteCount) PBYTE pBuffer,
+    _In_ ULONG ulByteCount)
 {
     ASSERT(pBuffer);
 
-    BOOL                        fSaveFrame = FALSE;
-    ULONG                       ulSaveFrameIndex = 0;
-    KIRQL                       oldIrql;
+    BOOL fSaveFrame = FALSE;
+    ULONG ulSaveFrameIndex = 0;
+    KIRQL oldIrql;
 
     // If stream writing is disabled, then exit.
     //
@@ -1005,7 +932,7 @@ CSaveData::WriteData
 
     DPF_ENTER(("[CSaveData::WriteData ulByteCount=%lu]", ulByteCount));
 
-    if( 0 == ulByteCount )
+    if (0 == ulByteCount)
     {
         return;
     }
@@ -1015,20 +942,74 @@ CSaveData::WriteData
     {
         ulByteCount = m_ulFrameSize;
     }
-        
+
     // Check to see if this frame is available.
     KeAcquireSpinLock(&m_FrameInUseSpinLock, &oldIrql);
     if (!m_fFrameUsed[m_ulFrameIndex])
     {
-        KeReleaseSpinLock(&m_FrameInUseSpinLock, oldIrql );
+        KeReleaseSpinLock(&m_FrameInUseSpinLock, oldIrql);
 
         ULONG ulWriteBytes = ulByteCount;
 
-        if( (m_ulBufferSize - m_ulBufferOffset) < ulWriteBytes )
+        if ((m_ulBufferSize - m_ulBufferOffset) < ulWriteBytes)
         {
             ulWriteBytes = m_ulBufferSize - m_ulBufferOffset;
         }
 
+        // ========== 音量处理逻辑（插入于 ulWriteBytes 决定之后，RtlCopyMemory 之前） ==========
+        extern ULONG g_DeviceVolume;
+        extern BOOLEAN g_Muted;
+
+        // 本处理假设音频数据格式为 16-bit PCM，即每个样本 2 字节
+        USHORT sampleBytes = sizeof(SHORT);
+        ULONG sampleCount = ulWriteBytes / sampleBytes;
+
+        // 将传入的 pBuffer 转换为 SHORT 数组指针，便于直接操作音频样本
+        SHORT *pSample = (SHORT *)pBuffer;
+
+        if (g_Muted)
+        {
+            // 如果静音，直接将整个原始输入缓冲区置零
+            RtlZeroMemory(pBuffer, ulWriteBytes);
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL,
+                       "[AVC] Mute ON: buffer cleared before copy. Bytes=%lu\n", ulWriteBytes);
+        }
+        else
+        {
+            // 进行音量缩放（百分比）
+            ULONG vol = g_DeviceVolume;
+            if (vol > 100)
+                vol = 100; // 最大值保护
+
+            for (ULONG i = 0; i < sampleCount; ++i)
+            {
+                LONG scaled = (LONG)pSample[i] * vol / 100;
+
+                // 防止溢出 16-bit PCM 范围
+                if (scaled > 32767)
+                    scaled = 32767;
+                if (scaled < -32768)
+                    scaled = -32768;
+
+                pSample[i] = (SHORT)scaled;
+            }
+
+            DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL,
+                       "[AVC] Volume applied: %lu%% to %lu samples (%lu bytes)\n",
+                       vol, sampleCount, ulWriteBytes);
+        }
+        // ================== EQ 算法处理（新增） ==================
+        // 将音量调整后的 PCM 再经过 EQ 处理
+        // 注意：pSample 指向 pBuffer，处理后数据依然写回 pBuffer
+
+        ProcessEqPcmBuffer(pSample, sampleCount);
+
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL,
+                   "[AVC] EQ applied to %lu samples\n", sampleCount);
+        // =========================================================
+        // =================================================================================================
+
+        // 执行写入到驱动缓冲
         RtlCopyMemory(m_pDataBuffer + m_ulBufferOffset, pBuffer, ulWriteBytes);
         m_ulBufferOffset += ulWriteBytes;
 
@@ -1047,7 +1028,7 @@ CSaveData::WriteData
 
         if (fSaveFrame)
         {
-            InterlockedExchange( (LONG *)&(m_fFrameUsed[m_ulFrameIndex]), TRUE );
+            InterlockedExchange((LONG *)&(m_fFrameUsed[m_ulFrameIndex]), TRUE);
             ulSaveFrameIndex = m_ulFrameIndex;
             m_ulFrameIndex = (m_ulFrameIndex + 1) % m_ulFrameCount;
         }
@@ -1055,17 +1036,15 @@ CSaveData::WriteData
         // Write the left over if the next frame is available.
         if (ulWriteBytes != ulByteCount)
         {
-            KeAcquireSpinLock(&m_FrameInUseSpinLock, &oldIrql );
+            KeAcquireSpinLock(&m_FrameInUseSpinLock, &oldIrql);
             if (!m_fFrameUsed[m_ulFrameIndex])
             {
-                KeReleaseSpinLock(&m_FrameInUseSpinLock, oldIrql );
-                RtlCopyMemory
-                (
+                KeReleaseSpinLock(&m_FrameInUseSpinLock, oldIrql);
+                RtlCopyMemory(
                     m_pDataBuffer + m_ulBufferOffset,
                     pBuffer + ulWriteBytes,
-                    ulByteCount - ulWriteBytes
-                );
-                
+                    ulByteCount - ulWriteBytes);
+
                 m_ulBufferOffset += ulByteCount - ulWriteBytes;
             }
             else
@@ -1082,10 +1061,8 @@ CSaveData::WriteData
     }
     else
     {
-        KeReleaseSpinLock(&m_FrameInUseSpinLock, oldIrql );
+        KeReleaseSpinLock(&m_FrameInUseSpinLock, oldIrql);
         DPF(D_BLAB, ("[Frame %d is in use]", m_ulFrameIndex));
     }
 
 } // WriteData
-
-
