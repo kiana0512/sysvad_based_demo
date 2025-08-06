@@ -1,6 +1,12 @@
 #pragma once
 
+// 补充 BYTE 类型定义（如果没有）
+typedef unsigned char BYTE;
+
 #include <ntddk.h> // Windows 核心驱动头文件
+void VolumeControl_Apply(BYTE* pBuffer, ULONG length, int gainDb);
+void VolumeControl_Init();
+
 
 //
 // IOCTL 定义

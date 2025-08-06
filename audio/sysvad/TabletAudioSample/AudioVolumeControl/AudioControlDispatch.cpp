@@ -75,56 +75,121 @@ NTSTATUS AudioVolumeControl_DispatchIoControl(
         status = STATUS_SUCCESS;
         break;
 
-    case IOCTL_SET_EQ_PARAMS:
-        DbgPrint("[EQ] IOCTL_SET_EQ_PARAMS received, inputLength=%lu", inputLength);
+    // case IOCTL_SET_EQ_PARAMS:
+    //     DbgPrint("[EQ] IOCTL_SET_EQ_PARAMS received, inputLength=%lu", inputLength);
 
-        if (Irp->AssociatedIrp.SystemBuffer == NULL)
+    //     if (Irp->AssociatedIrp.SystemBuffer == NULL)
+    //     {
+    //         DbgPrint("[ERR] EQ Set Params: SystemBuffer is NULL");
+    //         status = STATUS_INVALID_PARAMETER;
+    //         break;
+    //     }
+
+    //     if (inputLength >= sizeof(EQControlParams))
+    //     {
+    //         EQControlParams *inParams = (EQControlParams *)Irp->AssociatedIrp.SystemBuffer;
+
+    //         DbgPrint("[EQ] BandCount = %d", inParams->BandCount);
+    //         for (int i = 0; i < inParams->BandCount && i < EQ_BANDS; ++i)
+    //         {
+    //             DbgPrint("[EQ] Band[%d]: Freq=%d Hz, Gain=%.2f dB, Q=%.2f",
+    //                      i,
+    //                      inParams->Bands[i].FrequencyHz,
+    //                      inParams->Bands[i].GainDb,
+    //                      inParams->Bands[i].Q);
+    //         }
+
+    //         EQControl_SetParams(inParams);
+    //         status = STATUS_SUCCESS;
+    //     }
+    //     else
+    //     {
+    //         DbgPrint("[ERR] EQ Set Params: Buffer too small. Got %lu, need %lu",
+    //                  inputLength, sizeof(EQControlParams));
+    //         status = STATUS_INVALID_PARAMETER;
+    //     }
+    //     break;
+
+    // case IOCTL_GET_EQ_PARAMS:
+    //     if (outputLength >= sizeof(EQControlParams))
+    //     {
+    //         EQControlParams *outParams = (EQControlParams *)Irp->AssociatedIrp.SystemBuffer;
+    //         EQControl_GetParams(outParams);
+    //         info = sizeof(EQControlParams);
+    //         DbgPrint("EQ params read. BandCount=%d\n", outParams->BandCount);
+    //         status = STATUS_SUCCESS;
+    //     }
+    //     else
+    //     {
+    //         DbgPrint("Invalid EQ get params buffer\n");
+    //         status = STATUS_INVALID_PARAMETER;
+    //     }
+    //     break;
+    case IOCTL_SET_EQ_BIQUAD_COEFFS:
+        if (inputLength >= sizeof(EQCoeffParams))
         {
-            DbgPrint("[ERR] EQ Set Params: SystemBuffer is NULL");
-            status = STATUS_INVALID_PARAMETER;
-            break;
-        }
+            EQCoeffParams *inCoeffs = (EQCoeffParams *)Irp->AssociatedIrp.SystemBuffer;
 
-        if (inputLength >= sizeof(EQControlParams))
-        {
-            EQControlParams *inParams = (EQControlParams *)Irp->AssociatedIrp.SystemBuffer;
+            DbgPrint("[EQ] === IOCTL_SET_EQ_BIQUAD_COEFFS ===\n");
+            DbgPrint("[EQ] BandCount = %d\n", inCoeffs->BandCount);
 
-            DbgPrint("[EQ] BandCount = %d", inParams->BandCount);
-            for (int i = 0; i < inParams->BandCount && i < EQ_BANDS; ++i)
+            for (int i = 0; i < inCoeffs->BandCount && i < EQ_BANDS; ++i)
             {
-                DbgPrint("[EQ] Band[%d]: Freq=%d Hz, Gain=%.2f dB, Q=%.2f",
-                         i,
-                         inParams->Bands[i].FrequencyHz,
-                         inParams->Bands[i].GainDb,
-                         inParams->Bands[i].Q);
+                DbgPrint("[EQ] Band[%02d] Coeffs:\n", i);
+                DbgPrint("      b0 = %8d\tb1 = %8d\tb2 = %8d\n",
+                         inCoeffs->Bands[i].b0,
+                         inCoeffs->Bands[i].b1,
+                         inCoeffs->Bands[i].b2);
+                DbgPrint("      a1 = %8d\ta2 = %8d\n",
+                         inCoeffs->Bands[i].a1,
+                         inCoeffs->Bands[i].a2);
             }
 
-            EQControl_SetParams(inParams);
+            EQControl_SetBiquadCoeffs(inCoeffs);
+            DbgPrint("[EQ] => EQ Coefficients Applied Successfully\n");
+
             status = STATUS_SUCCESS;
+            info = 0;
         }
         else
         {
-            DbgPrint("[ERR] EQ Set Params: Buffer too small. Got %lu, need %lu",
-                     inputLength, sizeof(EQControlParams));
+            DbgPrint("[EQ] [ERROR] IOCTL_SET_EQ_BIQUAD_COEFFS: Buffer too small (%lu < %lu)\n",
+                     inputLength, sizeof(EQCoeffParams));
             status = STATUS_INVALID_PARAMETER;
+        }
+        break;
+    case IOCTL_GET_EQ_BIQUAD_COEFFS:
+        if (outputLength >= sizeof(EQCoeffParams))
+        {
+            EQCoeffParams *outCoeffs = (EQCoeffParams *)Irp->AssociatedIrp.SystemBuffer;
+
+            EQControl_GetBiquadCoeffs(outCoeffs);
+            DbgPrint("[EQ] === IOCTL_GET_EQ_BIQUAD_COEFFS ===\n");
+            DbgPrint("[EQ] Returning BandCount = %d\n", outCoeffs->BandCount);
+
+            for (int i = 0; i < outCoeffs->BandCount && i < EQ_BANDS; ++i)
+            {
+                DbgPrint("[EQ] Band[%02d] Coeffs:\n", i);
+                DbgPrint("      b0 = %8d\tb1 = %8d\tb2 = %8d\n",
+                         outCoeffs->Bands[i].b0,
+                         outCoeffs->Bands[i].b1,
+                         outCoeffs->Bands[i].b2);
+                DbgPrint("      a1 = %8d\ta2 = %8d\n",
+                         outCoeffs->Bands[i].a1,
+                         outCoeffs->Bands[i].a2);
+            }
+
+            status = STATUS_SUCCESS;
+            info = sizeof(EQCoeffParams);
+        }
+        else
+        {
+            DbgPrint("[EQ] [ERROR] IOCTL_GET_EQ_BIQUAD_COEFFS: Buffer too small (%lu < %lu)\n",
+                     outputLength, sizeof(EQCoeffParams));
+            status = STATUS_BUFFER_TOO_SMALL;
         }
         break;
 
-    case IOCTL_GET_EQ_PARAMS:
-        if (outputLength >= sizeof(EQControlParams))
-        {
-            EQControlParams *outParams = (EQControlParams *)Irp->AssociatedIrp.SystemBuffer;
-            EQControl_GetParams(outParams);
-            info = sizeof(EQControlParams);
-            DbgPrint("EQ params read. BandCount=%d\n", outParams->BandCount);
-            status = STATUS_SUCCESS;
-        }
-        else
-        {
-            DbgPrint("Invalid EQ get params buffer\n");
-            status = STATUS_INVALID_PARAMETER;
-        }
-        break;
     case IOCTL_SEND_PCM:
         if (Irp->AssociatedIrp.SystemBuffer == NULL || inputLength == 0)
         {

@@ -38,7 +38,6 @@ Abstract:
 #include <AudioVolumeControl/AudioVolumeControl.h>
 #include ".\\TabletAudioSample\AudioVolumeControl\\AudioEQControl.h"
 
-
 typedef void (*fnPcDriverUnload)(PDRIVER_OBJECT);
 fnPcDriverUnload gPCDriverUnloadRoutine = NULL;
 extern "C" DRIVER_UNLOAD DriverUnload;
@@ -327,13 +326,12 @@ Environment:
     }
 
     //
-    // Unload WDF driver object. 
+    // Unload WDF driver object.
     //
     if (WdfGetDriver() != NULL)
     {
         WdfDriverMiniportUnload(WdfGetDriver());
     }
-
 
 Done:
     return;
@@ -666,11 +664,9 @@ Return Value:
     {
         DPF(D_TERSE, ("[AddDevice] AudioVolumeControl device ready."));
 
-        // 仅当控制设备创建成功时初始化 EQ 参数
-        EQControl_Init(); // ← 初始化 12 段 EQ 全局参数
-        DbgPrint("[DBG] EQControl_Init called. BandCount = %d, DefaultFreq = %dHz",
-                 g_EqParams.BandCount,
-                 g_EqParams.Bands[0].FrequencyHz); // 举例输出第一段的默认频率
+        // 初始化 EQ 参数（重置 12 段滤波器）
+        EQControl_Init();
+        DbgPrint("[DBG] EQControl_Init complete. All 12 bands reset.\n");
     }
 
     DbgPrint("[DBG] <=== AddDevice() done.\n");

@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36310.24 d17.14
+VisualStudioVersion = 17.14.36310.24
 MinimumVisualStudioVersion = 12.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package", "Package", "{FA56D96B-290B-4C73-A5E1-02C1861D3224}"
 EndProject
@@ -30,6 +30,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KwsAPO", "APO\KWSApo\KwsAPO.vcxproj", "{47358AD6-A48A-465B-965F-0A66F8BDFE23}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AecAPO", "APO\AecApo\AecAPO.vcxproj", "{83A1B9B0-3CB7-4249-ADEC-C336B0EDDE76}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioFilterDriver", "TabletAudioSample\AudioFilterDriver\AudioFilterDriver.vcxproj", "{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -103,6 +105,18 @@ Global
 		{83A1B9B0-3CB7-4249-ADEC-C336B0EDDE76}.Release|ARM64.Build.0 = Release|ARM64
 		{83A1B9B0-3CB7-4249-ADEC-C336B0EDDE76}.Release|x64.ActiveCfg = Release|x64
 		{83A1B9B0-3CB7-4249-ADEC-C336B0EDDE76}.Release|x64.Build.0 = Release|x64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Debug|ARM64.Build.0 = Debug|ARM64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Debug|x64.ActiveCfg = Debug|x64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Debug|x64.Build.0 = Debug|x64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Debug|x64.Deploy.0 = Debug|x64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Release|ARM64.ActiveCfg = Release|ARM64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Release|ARM64.Build.0 = Release|ARM64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Release|ARM64.Deploy.0 = Release|ARM64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Release|x64.ActiveCfg = Release|x64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Release|x64.Build.0 = Release|x64
+		{370CEE98-84D6-5DEE-8B5B-4C1D2B764E18}.Release|x64.Deploy.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
