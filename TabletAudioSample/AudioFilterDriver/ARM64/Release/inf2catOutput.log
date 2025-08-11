@@ -1,0 +1,10 @@
+Inf2Cat Tool Output:
+........................
+Signability test failed.
+
+Errors:
+B2.6.4.9: All Universal Serial Bus (USB) devices must have VID and PID sections in the PnP Device ID string. Third-party USB function drivers must not install through a compatible ID match. The following formats are not acceptable: USB\Class_ii, USB\Class_ii&SubClass_jj, USB\Class_ii&SubClass_jj&Prot_kk
+B2.6.4.9: All Universal Serial Bus (USB) devices must have VID and PID sections in the PnP Device ID string. Third-party USB function drivers must not install through a compatible ID match. The following formats are not acceptable: USB\Class_ii, USB\Class_ii&SubClass_jj, USB\Class_ii&SubClass_jj&Prot_kk
+
+Warnings:
+None

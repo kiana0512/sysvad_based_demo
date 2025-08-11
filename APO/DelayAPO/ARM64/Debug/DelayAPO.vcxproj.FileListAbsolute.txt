@@ -1,0 +1,2 @@
+C:\win_driver_demo\win_driver_demo copy\audio\sysvad\APO\DelayAPO\ARM64\Debug\DelayAPO.dll
+C:\win_driver_copy\audio\sysvad\APO\DelayAPO\ARM64\Debug\DelayAPO.dll

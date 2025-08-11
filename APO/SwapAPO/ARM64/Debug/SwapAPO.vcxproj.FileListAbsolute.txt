@@ -1,0 +1,2 @@
+C:\win_driver_demo\win_driver_demo copy\audio\sysvad\APO\SwapAPO\ARM64\Debug\SwapAPO.dll
+C:\win_driver_copy\audio\sysvad\APO\SwapAPO\ARM64\Debug\SwapAPO.dll

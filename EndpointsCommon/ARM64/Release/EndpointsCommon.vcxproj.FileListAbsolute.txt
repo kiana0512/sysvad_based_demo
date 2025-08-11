@@ -1,0 +1,1 @@
+C:\win_driver_copy\audio\sysvad\EndpointsCommon\ARM64\Release\EndpointsCommon.lib

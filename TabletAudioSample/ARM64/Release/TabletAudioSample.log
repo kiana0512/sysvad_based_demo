@@ -1,0 +1,111 @@
+﻿  Building 'TabletAudioSample' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
+  Stamping ARM64\Release\ComponentizedApoSample.inf
+  Stamping [Version] section with DriverVer=08/07/2025,15.33.40.333
+  Stamping ARM64\Release\ComponentizedAudioSample.inf
+  Stamping [Version] section with DriverVer=08/07/2025,15.33.40.469
+  Stamping ARM64\Release\ComponentizedAudioSampleExtension.inf
+  Stamping [Version] section with DriverVer=08/07/2025,15.33.40.599
+  A2dpHpDevice.cpp
+  adapter.cpp
+C:\win_driver_copy\audio\sysvad\adapter.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../adapter.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../adapter.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../adapter.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“../adapter.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+  basetopo.cpp
+  BthhfpDevice.cpp
+  common.cpp
+  hw.cpp
+  kshelper.cpp
+  savedata.cpp
+C:\win_driver_copy\audio\sysvad\savedata.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\eq.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../savedata.cpp”)
+  
+  tonegenerator.cpp
+  UsbHsDevice.cpp
+  AudioControlCore.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioControlCore.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioControlCore.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioControlCore.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioControlCore.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“AudioVolumeControl/AudioControlCore.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+  AudioControlDispatch.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioControlDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioControlDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioControlDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“AudioVolumeControl/AudioControlDispatch.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioControlDispatch.cpp(7,25): warning C4100: 'DeviceObject': 未引用的参数
+  AudioEQControl.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioEQControl.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioEQControl.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“AudioVolumeControl/AudioEQControl.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+  AudioEQDispatch.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioEQDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioEQDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“AudioVolumeControl/AudioEQDispatch.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQDispatch.cpp(7,20): warning C4100: 'DeviceObject': 未引用的参数
+  eq.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\eq.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\eq.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/eq.cpp”)
+  
+  hdmitopo.cpp
+  micintopo.cpp
+  spdiftopo.cpp
+  正在生成代码
+  已完成代码的生成
+  TabletAudioSample.vcxproj -> C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Release\TabletAudioSample.sys
+  Done Adding Additional Store
+  Successfully signed: C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Release\TabletAudioSample.sys
+  
+  Driver is 'Universal'.
+  DrvCat task was skipped as there was no catalog file to process
+  

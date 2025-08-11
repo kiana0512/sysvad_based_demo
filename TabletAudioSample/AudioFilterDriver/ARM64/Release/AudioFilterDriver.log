@@ -1,0 +1,246 @@
+﻿  Building 'AudioFilterDriver' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
+  Stamping ARM64\Release\AudioFilterDriver.inf
+  Stamping [Version] section with DriverVer=08/08/2025,15.46.13.455
+  AudioControlCore.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioControlCore.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioControlCore.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioControlCore.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioControlCore.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“../AudioVolumeControl/AudioControlCore.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+  AudioControlDispatch.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioControlDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioControlDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioControlDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“../AudioVolumeControl/AudioControlDispatch.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioControlDispatch.cpp(7,25): warning C4100: 'DeviceObject': 未引用的参数
+  AudioEQControl.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioEQControl.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioEQControl.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“../AudioVolumeControl/AudioEQControl.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+  AudioEQDispatch.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioEQDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioEQDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“../AudioVolumeControl/AudioEQDispatch.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQDispatch.cpp(7,20): warning C4100: 'DeviceObject': 未引用的参数
+  AudioVolumeProcessor.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/AudioVolumeProcessor.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,59): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,59): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,59): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,67): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,67): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,67): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,75): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,75): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(15,75): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,2): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,2): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,2): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,10): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,10): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,10): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,18): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,18): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,18): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,26): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,26): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,26): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,34): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,34): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,34): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,42): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,42): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,42): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,50): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,50): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,50): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,58): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,58): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,58): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,66): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,66): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,66): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,74): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,74): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(16,74): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,2): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,2): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,2): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,10): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,10): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,10): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,18): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,18): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,18): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,26): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,26): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,26): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,34): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,34): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,34): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,42): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,42): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,42): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,50): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,50): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,50): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,58): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,58): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,58): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,66): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,66): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,66): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,74): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,74): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(17,74): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,2): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,2): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,2): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,9): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,9): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,9): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,17): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,17): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,17): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,25): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,25): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,25): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,33): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,33): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,33): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,41): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,41): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,41): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,49): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,49): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,49): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,57): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,57): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,57): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,65): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,65): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,65): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,73): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,73): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(18,73): warning C4309: “初始化”: 截断常量值
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(19,2): warning C4838: 从“int”转换到“const USHORT”需要收缩转换
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(19,2): warning C4305: “初始化”: 从“int”到“const USHORT”截断
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp(19,2): warning C4309: “初始化”: 截断常量值
+  eq.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\eq.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\eq.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../AudioVolumeControl/eq.cpp”)
+  
+  ApplyAudioProcessing.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\AudioProcessing\ApplyAudioProcessing.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\AudioProcessing\ApplyAudioProcessing.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioProcessing/ApplyAudioProcessing.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioProcessing/ApplyAudioProcessing.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioProcessing/ApplyAudioProcessing.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“AudioProcessing/ApplyAudioProcessing.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioProcessing/ApplyAudioProcessing.cpp”)
+  
+  DriverEntry.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\DriverEntry.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“DriverEntry.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“DriverEntry.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.h(22,9): warning C4005: “MAX_EQ_BANDS”: 宏重定义
+  (编译源文件“DriverEntry.cpp”)
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQTypes.h(5,9):
+      参见“MAX_EQ_BANDS”的前一个定义
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“DriverEntry.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\AudioFilterDriver.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“DriverEntry.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\DriverEntry.cpp(233,40): warning C4996: 'ExAllocatePoolWithTag': ExAllocatePoolWithTag is deprecated, use ExAllocatePool2.
+  FilterTopology.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\FilterTopology.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\FilterTopology.cpp(7,9): warning C4005: “INITGUID”: 宏重定义
+      C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\FilterTopology.cpp(7,9):
+      之前在命令行上声明的“INITGUID”
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\AudioProcessing\ApplyAudioProcessing.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“FilterTopology.cpp”)
+  
+  正在生成代码
+  已完成代码的生成
+  AudioFilterDriver.vcxproj -> C:\win_driver_copy\audio\sysvad\ARM64\Release\AudioFilterDriver.sys
+  Done Adding Additional Store
+  Successfully signed: C:\win_driver_copy\audio\sysvad\ARM64\Release\AudioFilterDriver.sys
+  
+  Driver is 'Universal'.
+  ........................
+  Signability test complete.
+  
+  Errors:
+  None
+  
+  Warnings:
+  None
+  
+  Catalog generation complete.
+  C:\win_driver_copy\audio\sysvad\ARM64\Release\AudioFilterDriver\audiofilterdriver.cat
+  Set catalog attribute.
+  WdkVersion: 10.0.26100.0
+  Set catalog attribute.
+  WdkAssemblyVersion: 10.0.26100.4202
+  Done Adding Additional Store
+  Successfully signed: C:\win_driver_copy\audio\sysvad\ARM64\Release\AudioFilterDriver\audiofilterdriver.cat
+  

@@ -1,0 +1,2 @@
+PlatformToolSet=WindowsKernelModeDriver10.0:VCToolArchitecture=NativeARM64:VCToolsVersion=14.44.35207:TargetPlatformVersion=10.0.26100.0:
+Debug|ARM64|C:\win_driver_copy\audio\sysvad\|

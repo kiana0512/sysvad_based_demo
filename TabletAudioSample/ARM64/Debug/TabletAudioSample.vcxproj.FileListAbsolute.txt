@@ -1,0 +1,1 @@
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\TabletAudioSample.sys

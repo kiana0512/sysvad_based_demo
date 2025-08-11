@@ -1,0 +1,2 @@
+C:\win_driver_demo\win_driver_demo copy\audio\sysvad\EndpointsCommon\ARM64\Debug\EndpointsCommon.lib
+C:\win_driver_copy\audio\sysvad\EndpointsCommon\ARM64\Debug\EndpointsCommon.lib

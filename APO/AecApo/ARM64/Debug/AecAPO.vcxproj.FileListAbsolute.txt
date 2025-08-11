@@ -1,0 +1,2 @@
+C:\win_driver_demo\win_driver_demo copy\audio\sysvad\APO\AecApo\ARM64\Debug\AecApo.dll
+C:\win_driver_copy\audio\sysvad\APO\AecApo\ARM64\Debug\AecApo.dll

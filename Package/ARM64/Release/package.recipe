@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>C:\win_driver_copy\audio\sysvad\KeywordDetectorAdapter\ARM64\Release\KeywordDetectorContosoAdapter.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\win_driver_copy\audio\sysvad\APO\SwapAPO\ARM64\Release\SwapAPO.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\win_driver_copy\audio\sysvad\APO\DelayAPO\ARM64\Release\DelayAPO.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\win_driver_copy\audio\sysvad\APO\KWSApo\ARM64\Release\KWSApo.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\win_driver_copy\audio\sysvad\APO\AecApo\ARM64\Release\AecApo.dll</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Release\TabletAudioSample.sys</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\win_driver_copy\audio\sysvad\ARM64\Release\package</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles />
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>

@@ -1,0 +1,2 @@
+C:\win_driver_demo\win_driver_demo copy\audio\sysvad\KeywordDetectorAdapter\ARM64\Debug\KeywordDetectorContosoAdapter.dll
+C:\win_driver_copy\audio\sysvad\KeywordDetectorAdapter\ARM64\Debug\KeywordDetectorContosoAdapter.dll

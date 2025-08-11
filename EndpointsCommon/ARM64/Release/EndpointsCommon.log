@@ -1,0 +1,24 @@
+﻿  Building 'EndpointsCommon' with toolset 'WindowsKernelModeDriver10.0' and the 'Windows Driver' target platform.
+  a2dphpminwavert.cpp
+  a2dphpspeakertopo.cpp
+  a2dphptopo.cpp
+  AudioModuleHelper.cpp
+  bthhfpmictopo.cpp
+  bthhfpminwavert.cpp
+  bthhfpspeakertopo.cpp
+  bthhfptopo.cpp
+  micarraytopo.cpp
+  MiniportAudioEngineNode.cpp
+  MiniportStreamAudioEngineNode.cpp
+  mintopo.cpp
+  minwavert.cpp
+  minwavertstream.cpp
+  NewDelete.cpp
+  speakerhptopo.cpp
+  speakertopo.cpp
+  usbhsminwavert.cpp
+  usbhsmictopo.cpp
+  usbhsspeakertopo.cpp
+  正在编译...
+  usbhstopo.cpp
+  EndpointsCommon.vcxproj -> C:\win_driver_copy\audio\sysvad\EndpointsCommon\ARM64\Release\EndpointsCommon.lib

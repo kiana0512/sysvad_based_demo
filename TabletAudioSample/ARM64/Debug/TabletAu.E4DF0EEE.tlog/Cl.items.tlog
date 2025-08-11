@@ -1,0 +1,15 @@
+C:\win_driver_copy\audio\sysvad\A2dpHpDevice.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\A2dpHpDevice.obj
+C:\win_driver_copy\audio\sysvad\adapter.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\adapter.obj
+C:\win_driver_copy\audio\sysvad\basetopo.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\basetopo.obj
+C:\win_driver_copy\audio\sysvad\BthhfpDevice.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\BthhfpDevice.obj
+C:\win_driver_copy\audio\sysvad\common.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\common.obj
+C:\win_driver_copy\audio\sysvad\hw.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\hw.obj
+C:\win_driver_copy\audio\sysvad\kshelper.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\kshelper.obj
+C:\win_driver_copy\audio\sysvad\savedata.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\savedata.obj
+C:\win_driver_copy\audio\sysvad\tonegenerator.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\tonegenerator.obj
+C:\win_driver_copy\audio\sysvad\UsbHsDevice.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\UsbHsDevice.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\AudioVolumeControl.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControlDispatch.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\AudioVolumeControlDispatch.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\hdmitopo.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\hdmitopo.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\micintopo.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\micintopo.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\spdiftopo.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\spdiftopo.obj

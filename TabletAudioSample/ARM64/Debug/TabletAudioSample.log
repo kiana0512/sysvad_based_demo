@@ -1,0 +1,43 @@
+﻿  Building 'TabletAudioSample' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
+  Stamping ARM64\Debug\ComponentizedApoSample.inf
+  Stamping [Version] section with DriverVer=07/24/2025,15.7.27.744
+  Stamping ARM64\Debug\ComponentizedAudioSample.inf
+  Stamping [Version] section with DriverVer=07/24/2025,15.7.28.143
+  Stamping ARM64\Debug\ComponentizedAudioSampleExtension.inf
+  Stamping [Version] section with DriverVer=07/24/2025,15.7.28.324
+  A2dpHpDevice.cpp
+  adapter.cpp
+  basetopo.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“../adapter.cpp”)
+  
+  BthhfpDevice.cpp
+  common.cpp
+  hw.cpp
+  kshelper.cpp
+  savedata.cpp
+C:\win_driver_copy\audio\sysvad\savedata.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  tonegenerator.cpp
+  UsbHsDevice.cpp
+  AudioVolumeControl.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.cpp(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioVolumeControl.cpp”)
+  
+  AudioVolumeControlDispatch.cpp
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControl.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  (编译源文件“AudioVolumeControl/AudioVolumeControlDispatch.cpp”)
+  
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeControlDispatch.cpp(4,25): warning C4100: 'DeviceObject': 未引用的参数
+  hdmitopo.cpp
+  micintopo.cpp
+  spdiftopo.cpp
+  正在生成代码
+  已完成代码的生成
+  TabletAudioSample.vcxproj -> C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\TabletAudioSample.sys
+  Done Adding Additional Store
+  Successfully signed: C:\win_driver_copy\audio\sysvad\TabletAudioSample\ARM64\Debug\TabletAudioSample.sys
+  
+  Driver is 'Universal'.
+  DrvCat task was skipped as there was no catalog file to process
+  

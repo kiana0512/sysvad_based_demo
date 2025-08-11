@@ -1,0 +1,19 @@
+﻿  Building 'package' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
+  .........................................................
+  Signability test complete.
+  
+  Errors:
+  None
+  
+  Warnings:
+  None
+  
+  Catalog generation complete.
+  C:\win_driver_copy\audio\sysvad\ARM64\Debug\package\sysvad.cat
+  Set catalog attribute.
+  WdkVersion: 10.0.26100.0
+  Set catalog attribute.
+  WdkAssemblyVersion: 10.0.26100.4202
+  Done Adding Additional Store
+  Successfully signed: C:\win_driver_copy\audio\sysvad\ARM64\Debug\package\sysvad.cat
+  

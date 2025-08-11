@@ -1,0 +1,108 @@
+﻿  Building 'DelayAPO' with toolset 'WindowsApplicationForDrivers10.0' and the 'Windows Driver' target platform.
+  64 bit Processing .\DelayAPODll.idl
+  DelayAPODll.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\oaidl.idl
+  oaidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\objidl.idl
+  objidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\unknwn.idl
+  unknwn.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\wtypes.idl
+  wtypes.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\wtypesbase.idl
+  wtypesbase.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\basetsd.h
+  basetsd.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\guiddef.h
+  guiddef.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\ocidl.idl
+  ocidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\oleidl.idl
+  oleidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\servprov.idl
+  servprov.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\urlmon.idl
+  urlmon.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\msxml.idl
+  msxml.idl
+  64 bit Processing .\DelayAPOInterface.idl
+  DelayAPOInterface.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\audioenginebaseapo.idl
+  audioenginebaseapo.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\mmdeviceapi.idl
+  mmdeviceapi.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\propsys.idl
+  propsys.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\shtypes.idl
+  shtypes.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\StructuredQueryCondition.idl
+  StructuredQueryCondition.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\propidl.idl
+  propidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\audiomediatype.idl
+  audiomediatype.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\mmreg.h
+  mmreg.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\AudioAPOTypes.h
+  AudioAPOTypes.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\oaidl.acf
+  oaidl.acf
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\ocidl.acf
+  ocidl.acf
+  64 bit Processing .\DelayAPOInterface.idl
+  DelayAPOInterface.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\oaidl.idl
+  oaidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\objidl.idl
+  objidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\unknwn.idl
+  unknwn.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\wtypes.idl
+  wtypes.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\wtypesbase.idl
+  wtypesbase.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\basetsd.h
+  basetsd.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\guiddef.h
+  guiddef.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\ocidl.idl
+  ocidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\oleidl.idl
+  oleidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\servprov.idl
+  servprov.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\urlmon.idl
+  urlmon.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\msxml.idl
+  msxml.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\audioenginebaseapo.idl
+  audioenginebaseapo.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\mmdeviceapi.idl
+  mmdeviceapi.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\propsys.idl
+  propsys.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\shtypes.idl
+  shtypes.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\StructuredQueryCondition.idl
+  StructuredQueryCondition.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\propidl.idl
+  propidl.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\audiomediatype.idl
+  audiomediatype.idl
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\mmreg.h
+  mmreg.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\AudioAPOTypes.h
+  AudioAPOTypes.h
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\oaidl.acf
+  oaidl.acf
+  64 bit Processing C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\ocidl.acf
+  ocidl.acf
+  Delay.cpp
+  DelayAPODll.cpp
+  DelayAPOMFX.cpp
+  DelayAPOSFX.cpp
+    正在创建库 ARM64\Release\DelayAPO.lib 和对象 ARM64\Release\DelayAPO.exp
+  正在生成代码
+  已完成代码的生成
+  DelayAPO.vcxproj -> C:\win_driver_copy\audio\sysvad\APO\DelayAPO\ARM64\Release\DelayAPO.dll
+  Driver is 'Windows Driver'.

@@ -1,0 +1,9 @@
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioControlCore.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\AudioControlCore.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioControlDispatch.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\AudioControlDispatch.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQControl.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\AudioEQControl.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioEQDispatch.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\AudioEQDispatch.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\AudioVolumeProcessor.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\AudioVolumeProcessor.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioVolumeControl\eq.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\eq.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\AudioProcessing\ApplyAudioProcessing.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\ApplyAudioProcessing.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\DriverEntry.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\DriverEntry.obj
+C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\FilterTopology.cpp;C:\win_driver_copy\audio\sysvad\TabletAudioSample\AudioFilterDriver\ARM64\Release\FilterTopology.obj
