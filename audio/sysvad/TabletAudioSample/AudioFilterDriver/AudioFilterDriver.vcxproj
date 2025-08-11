@@ -155,9 +155,12 @@
     <ClInclude Include="FilterTopology.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\AudioVolumeControl\AudioControlCore.cpp" />
     <ClCompile Include="..\AudioVolumeControl\AudioControlDispatch.cpp" />
     <ClCompile Include="..\AudioVolumeControl\AudioEQControl.cpp" />
+    <ClCompile Include="..\AudioVolumeControl\AudioEQDispatch.cpp" />
     <ClCompile Include="..\AudioVolumeControl\AudioVolumeProcessor.cpp" />
+    <ClCompile Include="..\AudioVolumeControl\eq.cpp" />
     <ClCompile Include="AudioProcessing\ApplyAudioProcessing.cpp" />
     <ClCompile Include="DriverEntry.cpp" />
     <ClCompile Include="FilterTopology.cpp" />
@@ -172,20 +175,24 @@
       <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</IgnoreAllDefaultLibraries>
       <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IgnoreAllDefaultLibraries>
       <IgnoreAllDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</IgnoreAllDefaultLibraries>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">DriverEntry</EntryPointSymbol>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">DriverEntry</EntryPointSymbol>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DriverEntry</EntryPointSymbol>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DriverEntry</EntryPointSymbol>
     </Link>
     <ClCompile>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp17</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp20</LanguageStandard>
     </ClCompile>
     <ClCompile>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TreatWarningAsError>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpp17</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpp20</LanguageStandard>
     </ClCompile>
     <ClCompile>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpp17</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpp20</LanguageStandard>
     </ClCompile>
     <ClCompile>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">stdcpp17</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">stdcpp20</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

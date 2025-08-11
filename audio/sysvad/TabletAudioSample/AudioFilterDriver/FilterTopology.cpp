@@ -14,6 +14,7 @@
 #include <portcls.h> // Port Class 接口（定义 PKSPIN、KSPIN_DISPATCH 等）
 #include <ks.h>      // KS 框架基本结构
 #include <ksmedia.h> // KSDATARANGE_AUDIO、KSCATEGORY_AUDIO 等音频定义
+#include <ApplyAudioProcessing.h> //
 // ============================================================================
 // 数据格式定义：我们支持 PCM，48KHz，16bit，2声道
 // ============================================================================
@@ -55,7 +56,7 @@ NTSTATUS NTAPI PinWriteProcess(PKSPIN Pin)
     ULONG length = streamPointer->StreamHeader->DataUsed;
 
     //  调用你自己的 EQ / 音量处理函数（此处可替换）
-    // ApplyAudioProcessing(pBuffer, length);
+    ApplyAudioProcessing(pBuffer, length);
 
     DbgPrint("[Filter] PinWriteProcess: processed %lu bytes\n", length);
 
@@ -116,7 +117,7 @@ const GUID KSCATEGORY_AUDIO_GUID = KSCATEGORY_AUDIO;
 // ===========================================
 // 定义 Filter 类别（只使用音频类别）
 // ===========================================
-const GUID* const Categories = &KSCATEGORY_AUDIO;
+const GUID *const Categories = &KSCATEGORY_AUDIO;
 
 // ===========================================
 // 初始化 Filter 总体描述符（KSFILTER_DESCRIPTOR）
