@@ -30,13 +30,13 @@ UNICODE_STRING g_SymLinkName = RTL_CONSTANT_STRING(L"\\DosDevices\\kiana_AudioCo
 // ============================================================================
 typedef struct _FILTER_DEVICE_EXTENSION
 {
-    PDEVICE_OBJECT LowerDeviceObject; // 下层FDO
-    PDEVICE_OBJECT Pdo;               // 真正的PDO（就是 PhysicalDeviceObject）
-    UNICODE_STRING DeviceName;        // 保存自建设备名
+    PDEVICE_OBJECT LowerDeviceObject; // 下层 FDO
+    PDEVICE_OBJECT Pdo;               // 真正的 PDO（PhysicalDeviceObject）
+    UNICODE_STRING DeviceName;        // 自建设备名
     BOOLEAN EnableAudioProcessing;    // 是否启用 EQ/音量
-    LONG DeviceIndex;
-    PVOID KsHeader;                 // 新增：KS 设备头句柄（PVOID）
-    PKSFILTERFACTORY FilterFactory; //  新增：保存创建的 Filter 工厂
+    LONG DeviceIndex;                 // 设备序号
+    PVOID KsHeader;                   // KS 设备头句柄
+    PKSFILTERFACTORY FilterFactory;   // 保存创建的 Filter 工厂
 } FILTER_DEVICE_EXTENSION, *PFILTER_DEVICE_EXTENSION;
 
 // ============================================================================
@@ -68,7 +68,7 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
         DriverObject,
         0, // 无设备扩展
         &g_DeviceName,
-        FILE_DEVICE_UNKNOWN,
+        FILE_DEVICE_KS,
         0,
         FALSE,
         &g_ControlDeviceObject);
@@ -312,7 +312,7 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     {
         DbgPrint("[KSFilter] IRP_MN_START_DEVICE received\n");
 
-        // 先把 IRP 下发到下层，等待其完成
+        // 1) 先下发到下层并等待完成
         KEVENT evt;
         KeInitializeEvent(&evt, NotificationEvent, FALSE);
         IoCopyCurrentIrpStackLocationToNext(Irp);
@@ -332,6 +332,7 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
             return status;
         }
 
+        // 非目标设备：直接成功返回
         if (!devExt->EnableAudioProcessing)
         {
             DbgPrint("[KSFilter] Skipping KS topology (not target device)\n");
@@ -340,78 +341,64 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
             return STATUS_SUCCESS;
         }
 
-        // === KS 设备头：在 START 之后分配并绑定 ===
+        // 2) 分配并绑定 KS 设备头（关键：4 参数版本 + 传 FDO）
         if (!devExt->KsHeader)
         {
-            // 1) 分配设备头
-            NTSTATUS ksSt = KsAllocateDeviceHeader(&devExt->KsHeader, 0, NULL);
+            // 1) 分配 KS 设备头（3 参数版本）
+            NTSTATUS ksSt = KsAllocateDeviceHeader(
+                &devExt->KsHeader, // out
+                0,                 // CreateItemsCount（没有就填 0）
+                nullptr            // CreateItems（没有就填 NULL）
+            );
             DbgPrint("[KSFilter] KsAllocateDeviceHeader: header=%p, st=0x%08X\n",
                      devExt->KsHeader, ksSt);
             if (!NT_SUCCESS(ksSt) || !devExt->KsHeader)
             {
-                // 允许继续启动或直接失败都行
-                Irp->IoStatus.Status = STATUS_SUCCESS;
+                DbgPrint("[KSFilter] KsAllocateDeviceHeader failed -> fail START\n");
+                Irp->IoStatus.Status = ksSt;
                 IoCompleteRequest(Irp, IO_NO_INCREMENT);
-                return STATUS_SUCCESS;
+                return ksSt;
             }
 
-            // 2) 正确绑定：PnP 对象 = Lower，Base 对象 = FDO
-            DbgPrint("[KSFilter] KsSetDevicePnpAndBaseObject(PnP=%p Lower, Base=%p FDO)\n",
-                     devExt->LowerDeviceObject, DeviceObject);
-            KsSetDevicePnpAndBaseObject(devExt->KsHeader, devExt->LowerDeviceObject, DeviceObject);
+            // 3) 绑定 PnP 对象和 Base 对象
+            //    PnP 对象 = PDO，Base 对象 = 本 FDO
+            DbgPrint("[KSFilter] KsSetDevicePnpAndBaseObject(PnP=PDO=%p, Base=FDO=%p)\n",
+                     devExt->Pdo, DeviceObject);
+            KsSetDevicePnpAndBaseObject(devExt->KsHeader, devExt->Pdo, DeviceObject);
+        }
+        DbgPrint("[KS] FDO=%p, PDO=%p, Lower=%p, KsHeader=%p\n",
+                 DeviceObject, devExt->Pdo, devExt->LowerDeviceObject, devExt->KsHeader);
 
-            // 4) 创建工厂（8 参数版本）
+        // 4) 创建 Filter 工厂（只调一次）
+        if (!devExt->FilterFactory)
+        {
             PKSFILTERFACTORY factory = NULL;
             NTSTATUS regStatus = KsCreateFilterFactory(
-                DeviceObject,      // ← 一定要传你的 FDO
-                &FilterDescriptor, // ← 全局/常驻的描述符
-                NULL, NULL,        // RefString / Security
-                0,                 // CreateItemFlags
-                NULL, NULL,        // Sleep/Wake
-                &factory);
-
+                DeviceObject,             // FDO
+                &FilterDescriptor,        // 你的拓扑描述符（确保 extern 名称一致）
+                NULL,                     // RefString
+                NULL,                     // Security
+                KSCREATE_ITEM_FREEONSTOP, // 推荐：STOP 自动清理
+                NULL,                     // SleepCallback
+                NULL,                     // WakeCallback
+                &factory                  // out
+            );
             if (!NT_SUCCESS(regStatus))
             {
                 DbgPrint("[KSFilter] KsCreateFilterFactory failed: 0x%08X (hdr=%p)\n",
                          regStatus, devExt->KsHeader);
+                Irp->IoStatus.Status = regStatus;
+                IoCompleteRequest(Irp, IO_NO_INCREMENT);
+                return regStatus;
             }
-            else
-            {
-                devExt->FilterFactory = factory;
-                DbgPrint("[KSFilter] KsCreateFilterFactory OK, factory=%p\n", factory);
-            }
+            devExt->FilterFactory = factory;
+            DbgPrint("[KSFilter] KsCreateFilterFactory OK, factory=%p\n", factory);
         }
 
-        // 额外校验：确认 FilterDescriptor 有效
         DbgPrint("[KSFilter] FilterDescriptor=%p, Pins=%lu, Nodes=%lu\n",
                  &FilterDescriptor,
                  (ULONG)FilterDescriptor.PinDescriptorsCount,
                  (ULONG)FilterDescriptor.NodeDescriptorsCount);
-
-        // 你的 WDK 是 8 参版本（从“7 个参数不接受”可知），用 8 参调用：
-        PKSFILTERFACTORY factory = NULL;
-        NTSTATUS regStatus = KsCreateFilterFactory(
-            DeviceObject,      // FDO
-            &FilterDescriptor, // 你的拓扑描述符
-            NULL,              // RefString
-            NULL,              // Security
-            0,                 // CreateItemFlags（如需：KSCREATE_ITEM_FREEONSTOP）
-            NULL,              // SleepCallback
-            NULL,              // WakeCallback
-            &factory           // out
-        );
-
-        if (!NT_SUCCESS(regStatus))
-        {
-            DbgPrint("[KSFilter] KsCreateFilterFactory failed: 0x%08X (hdr=%p)\n",
-                     regStatus, devExt->KsHeader);
-            // 可选：KsFreeDeviceHeader(devExt->KsHeader); devExt->KsHeader = NULL;
-        }
-        else
-        {
-            devExt->FilterFactory = factory;
-            DbgPrint("[KSFilter] KsCreateFilterFactory OK, factory=%p\n", factory);
-        }
 
         Irp->IoStatus.Status = STATUS_SUCCESS;
         IoCompleteRequest(Irp, IO_NO_INCREMENT);
