@@ -1,6 +1,6 @@
 #include "ApplyAudioProcessing.h"
-#include "AudioEQControl.h"
-#include "AudioVolumeControl.h"
+#include "../../AudioVolumeControl/AudioEQControl.h"
+#include "../../AudioVolumeControl/AudioVolumeControl.h"
 int g_CurrentGainDb = 0;
 
 // 假设你有一个全局变量保存当前音量值（单位s dB）

@@ -2,7 +2,6 @@
 
 #include <ntddk.h>
 #include <windef.h>
-#include <portcls.h>
 #include <ks.h>
 #include <ksmedia.h>
 

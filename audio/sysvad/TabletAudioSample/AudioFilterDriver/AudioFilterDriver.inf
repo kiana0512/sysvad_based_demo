@@ -1,55 +1,61 @@
+; ======================== AudioFilterService.inf ========================
 [Version]
-Signature="$WINDOWS NT$"
-Class=Media
-ClassGuid={4D36E96C-E325-11CE-BFC1-08002BE10318}
-Provider=%ProviderName%
-DriverVer=08/08/2025,1.0.0.0
-CatalogFile=AudioFilterDriver.cat
-PnpLockdown=1
+Signature   = "$WINDOWS NT$"
+Provider    = %ProviderName%
+Class       = System
+ClassGuid   = {4D36E97D-E325-11CE-BFC1-08002BE10318}
+DriverVer   = 08/15/2025,1.0.0.0
+CatalogFile = AudioFilterDriver.cat
 
 [DestinationDirs]
-DefaultDestDir = 12 ; %SystemRoot%\System32\drivers
+Drv.Copy = 12   ; %SystemRoot%\System32\drivers
 
-[ControlFlags]
-ExcludeFromSelect = *
+; ------------------ 安装入口（架构修饰） ------------------
+[DefaultInstall.NTamd64]
+CopyFiles = Drv.Copy
 
-[Manufacturer]
-%MfgName%=KianaFilterModels,NTarm64
+[DefaultInstall.NTamd64.Services]
+AddService = AudioFilterDriver, 0x00000002, Svc.Install
 
-[KianaFilterModels.NTarm64]
-%KianaFilter.DeviceDesc%=KianaFilter_Install, Root\KianaAudioFilter
+[DefaultInstall.NTarm64]
+CopyFiles = Drv.Copy
 
-[KianaFilter_Install]
-CopyFiles=KianaFilter.CopyFiles
-Include=ks.inf
-Needs=KS.Registration
-AddReg=KianaFilter.AddReg
+[DefaultInstall.NTarm64.Services]
+AddService = AudioFilterDriver, 0x00000002, Svc.Install
 
-[KianaFilter_Install.Services]
-AddService=AudioFilterDriver, 0x00000002, KianaFilter.ServiceInstall
+; ------------------ 卸载入口（架构修饰 + LegacyUninstall） ------------------
+[DefaultUninstall.NTamd64]
+LegacyUninstall=1
 
-[KianaFilter.ServiceInstall]
-DisplayName=%KianaFilter.ServiceDesc%
-ServiceType=1
-StartType=3
-ErrorControl=1
-ServiceBinary=%12%\AudioFilterDriver.sys
+[DefaultUninstall.NTamd64.Services]
+DelService = AudioFilterDriver, 0x200
 
-[KianaFilter.CopyFiles]
+[DefaultUninstall.NTarm64]
+LegacyUninstall=1
+
+[DefaultUninstall.NTarm64.Services]
+DelService = AudioFilterDriver, 0x200
+
+; ------------------ 服务定义 ------------------
+[Svc.Install]
+DisplayName   = %ServiceDesc%
+ServiceType   = 1          ; SERVICE_KERNEL_DRIVER
+StartType     = 3          ; SERVICE_DEMAND_START
+ErrorControl  = 1          ; SERVICE_ERROR_NORMAL
+ServiceBinary = %12%\AudioFilterDriver.sys
+
+; ------------------ 复制文件 ------------------
+[Drv.Copy]
 AudioFilterDriver.sys
-
-[KianaFilter.AddReg]
-HKR,,FriendlyName,,%KianaFilter.DeviceDesc%
-
-[SourceDisksFiles]
-AudioFilterDriver.sys = 1
 
 [SourceDisksNames]
 1 = %DiskName%,,,
 
+[SourceDisksFiles]
+AudioFilterDriver.sys = 1
+
 [Strings]
 ProviderName = "Kiana Audio Tech"
-MfgName = "Kiana Audio Filters"
-KianaFilter.DeviceDesc = "Kiana Audio Filter Upper Driver"
-KianaFilter.ServiceDesc = "Kiana Audio Filter Service"
-DiskName = "Kiana Audio Filter Installation Disk"
+ServiceDesc  = "Kiana Audio Filter Service"
+DiskName     = "Kiana Audio Filter Installation Disk"
+; ======================================================================

@@ -19,3 +19,4 @@ NTSTATUS AudioVolumeControl_DispatchIoControl(PDEVICE_OBJECT DeviceObject, PIRP 
 NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 PDEVICE_OBJECT GetLowestDevice(PDEVICE_OBJECT startDevice);
 NTSTATUS QueryHardwareIdWithIrp(PDEVICE_OBJECT targetDevice, WCHAR *buffer, ULONG bufferLength);
+NTSTATUS StartComplete(PDEVICE_OBJECT DevObj, PIRP Irp, PVOID Context);

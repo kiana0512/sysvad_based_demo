@@ -1,149 +1,196 @@
 // ----------------------------
-// FilterTopology.cpp
-// 支持新版本 WDK（10.0.22621）
-// 实现一个基础音频 KS Filter：带输入输出 Pin，处理音频流
+// FilterTopology.cpp  (AVStream 最小安全骨架 / WDK 10.0.22621 通过)
 // ----------------------------
 
-#define INITGUID // 避免重复定义 GUID
-#undef KS_LIB
-#undef KS_PROXY
-#undef _KSUSER_
+#define INITGUID  // 仅在一个编译单元里定义，避免 GUID 重复定义
 
-#include <ntddk.h>   // NT 驱动核心头文件
-#include <windef.h>  // GUID、DWORD 等类型
-#include <portcls.h> // Port Class 接口（定义 PKSPIN、KSPIN_DISPATCH 等）
-#include <ks.h>      // KS 框架基本结构
-#include <ksmedia.h> // KSDATARANGE_AUDIO、KSCATEGORY_AUDIO 等音频定义
-#include <ApplyAudioProcessing.h> //
+#include <ntddk.h>
+#include <windef.h>
+#include <ks.h>
+#include <ksmedia.h>
+#include "FilterTopology.h"
+
+// ⚠ 不要在内核里包含 <mmreg.h>（会引入 GDI/位图相关，导致 “bmi 未知” 报错）
+// 若工程其他处使用了 WAVE_FORMAT_PCM，这里本地兜底定义即可：
+#ifndef WAVE_FORMAT_PCM
+#define WAVE_FORMAT_PCM 0x0001
+#endif
+
+#include "./AudioProcessing/ApplyAudioProcessing.h"
+
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 // ============================================================================
-// 数据格式定义：我们支持 PCM，48KHz，16bit，2声道
+// 1) 支持的数据格式（范围）：48kHz / 16bit / 2ch 的 PCM
+//    注意：这里用“非 const”，避免某些工具链对 const 聚合初始化报 C2737。
+//    同时也便于直接用 PKSDATARANGE 指针数组而无需 const_cast。
 // ============================================================================
 
-const KSDATARANGE_AUDIO PinDataRange = {
+static KSDATARANGE_AUDIO g_PinDataRange = {
     {
-        sizeof(KSDATARANGE_AUDIO),                        // 格式结构体大小
-        0,                                                // Flags
-        0x7FFFFFFF,                                       // 最大样本大小（任意）
-        0,                                                // Reserved
-        STATICGUIDOF(KSDATAFORMAT_TYPE_AUDIO),            // 主类型：音频
-        STATICGUIDOF(KSDATAFORMAT_SUBTYPE_PCM),           // 子类型：PCM
-        STATICGUIDOF(KSDATAFORMAT_SPECIFIER_WAVEFORMATEX) // WaveFormatEx 说明符
+        sizeof(KSDATARANGE_AUDIO),               // FormatSize
+        0,                                       // Flags
+        0x7FFFFFFF,                              // SampleSize (max)
+        0,                                       // Reserved
+        STATICGUIDOF(KSDATAFORMAT_TYPE_AUDIO),   // MajorType
+        STATICGUIDOF(KSDATAFORMAT_SUBTYPE_PCM),  // SubType
+        STATICGUIDOF(KSDATAFORMAT_SPECIFIER_WAVEFORMATEX) // Specifier
     },
-    2,     // 通道数：2（立体声）
-    48000, // 最小采样率：48KHz
-    48000, // 最大采样率：48KHz
-    16     // 位深度：16bit
+    2,        // Channels
+    48000,    // MinSampleRate
+    48000,    // MaxSampleRate
+    16        // MinBitsPerSample == MaxBitsPerSample
 };
 
-// 替代 ARRAYSIZE 宏
-#define COUNT_OF(x) (sizeof(x) / sizeof((x)[0]))
+// DataRanges 字段类型在你的 WDK 中为 “const PKSDATARANGE *”。
+// 其中 PKSDATARANGE == KSDATARANGE*。
+// 因此我们构造“指向 KSDATARANGE 的指针数组”，再传其退化后的指针。
+static const PKSDATARANGE g_PinDataRanges[] = {
+    (PKSDATARANGE)&g_PinDataRange
+};
 
 // ============================================================================
-// Pin 回调函数（新版 PFNKSPIN）：处理音频数据（输入Pin）
+// 2) Pin 处理回调（Render IN）：从 KSSTREAM_POINTER 取数据→调用你的处理→advance
 // ============================================================================
 
+extern "C"
 NTSTATUS NTAPI PinWriteProcess(PKSPIN Pin)
 {
-    // 获取当前的流指针（前沿指针，表示当前数据包）
-    PKSSTREAM_POINTER streamPointer = KsPinGetLeadingEdgeStreamPointer(Pin, KSSTREAM_POINTER_STATE_LOCKED);
-    if (!streamPointer || !streamPointer->StreamHeader || !streamPointer->StreamHeader->Data || streamPointer->StreamHeader->DataUsed == 0)
+    PKSSTREAM_POINTER sp =
+        KsPinGetLeadingEdgeStreamPointer(Pin, KSSTREAM_POINTER_STATE_LOCKED);
+
+    if (!sp || !sp->StreamHeader || !sp->StreamHeader->Data ||
+        sp->StreamHeader->DataUsed == 0)
     {
         return STATUS_INVALID_PARAMETER;
     }
 
-    // 获取数据指针与长度
-    BYTE *pBuffer = (BYTE *)streamPointer->StreamHeader->Data;
-    ULONG length = streamPointer->StreamHeader->DataUsed;
+    BYTE*  p = (BYTE*)sp->StreamHeader->Data;
+    ULONG  n = sp->StreamHeader->DataUsed;
 
-    //  调用你自己的 EQ / 音量处理函数（此处可替换）
-    ApplyAudioProcessing(pBuffer, length);
+    ApplyAudioProcessing(p, n);
 
-    DbgPrint("[Filter] PinWriteProcess: processed %lu bytes\n", length);
+    DbgPrint("[Filter] PinWriteProcess: processed %lu bytes\n", n);
 
-    // 移动流指针，表示已处理当前数据
-    KsStreamPointerAdvance(streamPointer);
-
+    KsStreamPointerAdvance(sp);
     return STATUS_SUCCESS;
 }
 
 // ============================================================================
-// Pin 回调函数表（KSPIN_DISPATCH）：只定义了 Process 回调
+// 3) KSPIN_DISPATCH（注意 8 个槽位顺序）
+//    Create, Close, Process, Reset, SetDataFormat, SetDeviceState, Connect, Disconnect
 // ============================================================================
 
-const KSPIN_DISPATCH MyPinDispatch = {
-    NULL,            // Create（可选）
-    NULL,            // Close（可选）
-    PinWriteProcess, // Process 回调（新版 PFNKSPIN：只接受 PKSPIN）
-    NULL,            // Reset
-    NULL,            // Flush
-    NULL,            // SetFormat（可扩展）
-    NULL,            // SetDeviceState（可扩展）
-    NULL             // Connect
+static const KSPIN_DISPATCH g_PinDispatch = {
+    /* Create         */ NULL,
+    /* Close          */ NULL,
+    /* Process        */ PinWriteProcess,
+    /* Reset          */ NULL,
+    /* SetDataFormat  */ NULL,
+    /* SetDeviceState */ NULL,
+    /* Connect        */ NULL,
+    /* Disconnect     */ NULL
 };
 
 // ============================================================================
-//  Pin 描述符数组：包含输入Pin（Render）和输出Pin（Capture）
+// 4) Filter 类别（数组形式；常用就是 KSCATEGORY_AUDIO）
 // ============================================================================
 
-const KSPIN_DESCRIPTOR_EX PinDescriptors[] = {
+static const GUID g_FilterCategories[] = { KSCATEGORY_AUDIO };
+
+// ============================================================================
+// 5) KSPIN_DESCRIPTOR_EX
+//    ⚠ 你的 WDK 中 KSPIN_DESCRIPTOR 的字段顺序是：
+//       Interfaces, InterfaceCount,
+//       Mediums,    MediumCount,
+//       DataRangesCount, DataRanges,   ←←← 这两个位置按此顺序
+//       DataFlow,   Communication,
+//       Category,   Name,
+//       Reserved
+//    若顺序/类型写错，会出现 “无法从 const KSDATARANGE*const* 转换为 const PKSDATARANGE*” 等 C2440。
+// ============================================================================
+
+static const KSPIN_DESCRIPTOR_EX g_PinDescriptors[] =
+{
+    // ---- Render（IN → SINK）----
     {
-        &MyPinDispatch,                // 回调函数表
-        NULL,                          // AutomationTable（支持属性时可定义）
-        0,                             // Version
-        0,                             // Flags
-        NULL, NULL,                    // Interface & InterfaceCount（可留空）
-        1,                             // 支持格式数量
-        (PKSDATARANGE *)&PinDataRange, // 支持的格式数组
-        KSPIN_DATAFLOW_IN,             // 输入流（Render）
-        KSPIN_COMMUNICATION_SINK,      // Sink（接收数据）
-        NULL, NULL, NULL, NULL         // Framing & Allocator：默认
+        /* Dispatch         */ &g_PinDispatch,
+        /* AutomationTable  */ NULL,
+
+        /* PinDescriptor    */ {
+            /* Interfaces       */ NULL,
+            /* InterfaceCount   */ 0,
+            /* Mediums          */ NULL,
+            /* MediumCount      */ 0,
+
+            /* DataRangesCount  */ ARRAYSIZE(g_PinDataRanges),
+            /* DataRanges       */ g_PinDataRanges,  // 类型：const PKSDATARANGE* ✅
+
+            /* DataFlow         */ KSPIN_DATAFLOW_IN,
+            /* Communication    */ KSPIN_COMMUNICATION_SINK,
+            /* Category         */ &KSCATEGORY_AUDIO,
+            /* Name             */ NULL,
+            /* Reserved         */ 0
+        },
+
+        /* Flags              */ KSPIN_FLAG_DO_NOT_INITIATE_PROCESSING,
+        /* InstancesPossible  */ 1,
+        /* InstancesNecessary */ 1,
+        /* AllocatorFraming   */ NULL,
+        /* IntersectHandler   */ NULL
     },
-    {&MyPinDispatch,
-     NULL,
-     0,
-     0,
-     NULL, NULL,
-     1,
-     (PKSDATARANGE *)&PinDataRange,
-     KSPIN_DATAFLOW_OUT,         // 输出流（Capture）
-     KSPIN_COMMUNICATION_SOURCE, // Source（发送数据）
-     NULL, NULL, NULL, NULL}};
+
+    // ---- Capture（OUT → SOURCE）----
+    {
+        /* Dispatch         */ &g_PinDispatch,
+        /* AutomationTable  */ NULL,
+
+        /* PinDescriptor    */ {
+            /* Interfaces       */ NULL,
+            /* InterfaceCount   */ 0,
+            /* Mediums          */ NULL,
+            /* MediumCount      */ 0,
+
+            /* DataRangesCount  */ ARRAYSIZE(g_PinDataRanges),
+            /* DataRanges       */ g_PinDataRanges,  // 类型：const PKSDATARANGE* ✅
+
+            /* DataFlow         */ KSPIN_DATAFLOW_OUT,
+            /* Communication    */ KSPIN_COMMUNICATION_SOURCE,
+            /* Category         */ &KSCATEGORY_AUDIO,
+            /* Name             */ NULL,
+            /* Reserved         */ 0
+        },
+
+        /* Flags              */ KSPIN_FLAG_DO_NOT_INITIATE_PROCESSING,
+        /* InstancesPossible  */ 1,
+        /* InstancesNecessary */ 1,
+        /* AllocatorFraming   */ NULL,
+        /* IntersectHandler   */ NULL
+    }
+};
 
 // ============================================================================
-//  Filter 类别定义：声明为音频设备（KSCATEGORY_AUDIO）
+// 6) 对外导出的 Filter 描述符（与外部 extern 名称完全一致）
 // ============================================================================
 
-const GUID KSCATEGORY_AUDIO_GUID = KSCATEGORY_AUDIO;
-// ===========================================
-// 定义 Filter 类别（只使用音频类别）
-// ===========================================
-const GUID *const Categories = &KSCATEGORY_AUDIO;
-
-// ===========================================
-// 初始化 Filter 总体描述符（KSFILTER_DESCRIPTOR）
-// 顺序初始化，避免 C++20 限制
-// ===========================================
+extern "C"
 const KSFILTER_DESCRIPTOR FilterDescriptor = {
-    NULL,                        // Dispatch：Filter 的回调函数表（如 Create、Process 等），当前设为 NULL（未实现）
-    NULL,                        // AutomationTable：属性自动处理表，用于定义自定义属性接口，这里不使用
-    KSFILTER_DESCRIPTOR_VERSION, // Version：结构体版本号，通常设为 ((ULONG)-1) 表示当前版本
-    0,                           // Flags：Filter 特性标志，常见的如 DISPATCH_LEVEL，当前无特殊标志
-
-    NULL, // ReferenceGuid：引用 GUID，用于识别设备或 Filter，一般设为 NULL
-
-    COUNT_OF(PinDescriptors),    // PinDescriptorsCount：定义的 Pin 数量
-    sizeof(KSPIN_DESCRIPTOR_EX), // PinDescriptorSize：每个 Pin 描述符的字节大小（必须指定，否则系统不知道如何读取）
-    PinDescriptors,              // PinDescriptors：指向 Pin 描述符数组的指针
-
-    1,          // CategoriesCount：类别数量（这里只有一个音频类别）
-    Categories, // Categories：类别 GUID 数组（这里只包含 KSCATEGORY_AUDIO）
-
-    0,    // NodeDescriptorsCount：拓扑节点数量（当前未使用）
-    0,    // NodeDescriptorSize：每个 Node 描述符大小（未使用设为 0）
-    NULL, // NodeDescriptors：节点数组指针，未使用设为 NULL
-
-    0,    // ConnectionsCount：连接关系数量（用于描述 Pin 与 Node 的内部连线）
-    NULL, // Connections：连接结构体数组，当前未定义连接关系
-
-    NULL // ComponentId：组件标识（用于设备唯一性标识，一般用于硬件设备），当前设为 NULL
+    /* Dispatch              */ NULL,                        // 如需 Filter 级回调再补
+    /* AutomationTable       */ NULL,                        // 暂无属性/方法/事件
+    /* Version               */ KSFILTER_DESCRIPTOR_VERSION,
+    /* Flags                 */ 0,
+    /* ReferenceGuid         */ &KSCATEGORY_AUDIO,           // 建议不要为 NULL
+    /* PinDescriptorsCount   */ ARRAYSIZE(g_PinDescriptors),
+    /* PinDescriptorSize     */ sizeof(KSPIN_DESCRIPTOR_EX),
+    /* PinDescriptors        */ g_PinDescriptors,
+    /* CategoriesCount       */ ARRAYSIZE(g_FilterCategories),
+    /* Categories            */ g_FilterCategories,
+    /* NodeDescriptorsCount  */ 0,
+    /* NodeDescriptorSize    */ 0,
+    /* NodeDescriptors       */ NULL,
+    /* ConnectionsCount      */ 0,
+    /* Connections           */ NULL,
+    /* ComponentId           */ NULL
 };
