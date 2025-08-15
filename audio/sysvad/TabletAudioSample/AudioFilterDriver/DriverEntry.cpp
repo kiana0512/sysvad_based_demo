@@ -360,13 +360,6 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
                      devExt->LowerDeviceObject, DeviceObject);
             KsSetDevicePnpAndBaseObject(devExt->KsHeader, devExt->LowerDeviceObject, DeviceObject);
 
-            // 3)（可选但推荐）拿设备互斥锁
-            PKSDEVICE ksDev = KsGetDeviceForDeviceObject(DeviceObject); // 从 FDO 拿 KSDEVICE
-            if (ksDev)
-            {
-                KsAcquireDevice(ksDev);
-            } // 获取 device mutex  :contentReference[oaicite:4]{index=4}
-
             // 4) 创建工厂（8 参数版本）
             PKSFILTERFACTORY factory = NULL;
             NTSTATUS regStatus = KsCreateFilterFactory(
@@ -376,12 +369,6 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
                 0,                 // CreateItemFlags
                 NULL, NULL,        // Sleep/Wake
                 &factory);
-
-            // 5) 释放互斥锁
-            if (ksDev)
-            {
-                KsReleaseDevice(ksDev);
-            } // 释放 device mutex  :contentReference[oaicite:5]{index=5}
 
             if (!NT_SUCCESS(regStatus))
             {
