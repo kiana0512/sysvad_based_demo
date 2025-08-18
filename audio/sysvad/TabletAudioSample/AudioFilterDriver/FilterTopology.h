@@ -14,14 +14,18 @@ enum
 };
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-// Pin 音频处理回调（对应 PFNKSPINPROCESS）
-NTSTATUS NTAPI PinWriteProcess(PKSPIN Pin);
+    // Pin 音频处理回调（对应 PFNKSPINPROCESS）
+    NTSTATUS NTAPI PinWriteProcess(PKSPIN Pin);
 
-// Filter 描述符（驱动入口描述）
-extern const KSFILTER_DESCRIPTOR FilterDescriptor;
+    // Filter 描述符（驱动入口描述）
+    extern KSFILTER_DESCRIPTOR FilterDescriptor;
+
+    // 运行时构建 Pins（在注册工厂之前调用一次）
+    void SetupPins(void);
 
 #ifdef __cplusplus
 }

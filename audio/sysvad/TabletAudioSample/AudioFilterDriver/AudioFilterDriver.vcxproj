@@ -153,6 +153,8 @@
     <ClInclude Include="AudioFilterDriver.h" />
     <ClInclude Include="AudioProcessing\ApplyAudioProcessing.h" />
     <ClInclude Include="FilterTopology.h" />
+    <ClInclude Include="KsHelper.h" />
+    <ClInclude Include="KsSanityCheck.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\AudioVolumeControl\AudioControlCore.cpp" />

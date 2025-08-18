@@ -45,6 +45,12 @@
     <ClInclude Include="..\AudioVolumeControl\AudioEQControl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="KsHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KsSanityCheck.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AudioProcessing\ApplyAudioProcessing.cpp">

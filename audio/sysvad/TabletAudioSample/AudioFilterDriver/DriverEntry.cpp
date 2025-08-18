@@ -7,8 +7,32 @@
 #include <ks.h>      // KS 框架基本结构
 #include <ksmedia.h> // KSDATARANGE_AUDIO、KSCATEGORY_AUDIO 等音频定义
 #include "FilterTopology.h"
-extern const KSFILTER_DESCRIPTOR FilterDescriptor; // 你的 FilterTopology.cpp 里定义的那个
-extern const GUID KSCATEGORY_AUDIO_GUID;           // 你定义的音频类别 GUID（就是 KSCATEGORY_AUDIO）
+#include "KsHelper.h"
+#include "KsSanityCheck.h"
+extern "C" KSFILTER_DESCRIPTOR FilterDescriptor;   // 仅声明，不能写等号
+extern const GUID KSCATEGORY_AUDIO_GUID;     // 你定义的音频类别 GUID（就是 KSCATEGORY_AUDIO）
+// ===== AVStream 兼容兜底：有的 WDK 不公开 KSDEVICE_HEADER =====
+#ifndef PKSDEVICE_HEADER
+typedef PVOID PKSDEVICE_HEADER;
+#endif
+// ===== KS 设备层描述子（用于把 KS Header 绑定到你的 FDO）=====
+static const KSDEVICE_DISPATCH g_DeviceDispatch = {
+    /*Add        */ NULL,
+    /*Start      */ NULL,
+    /*PostStart  */ NULL,
+    /*Remove     */ NULL,
+    /*QueryStop  */ NULL,
+    /*CancelStop */ NULL,
+    /*Stop       */ NULL,
+    /*QueryRemove*/ NULL,
+    /*CancelRemove*/ NULL};
+
+static const KSDEVICE_DESCRIPTOR g_KsDeviceDescriptor = {
+    &g_DeviceDispatch,
+    0, NULL, // FilterDescriptorsCount / FilterDescriptors（我们用 Factory 注册，这里留 0/NULL）
+    0, NULL  // ComponentsCount / Components
+};
+
 // 手动补充声明（C 接口）
 extern "C" NTSTATUS KsRegisterFilter(
     PDEVICE_OBJECT DeviceObject,
@@ -30,15 +54,16 @@ UNICODE_STRING g_SymLinkName = RTL_CONSTANT_STRING(L"\\DosDevices\\kiana_AudioCo
 // ============================================================================
 typedef struct _FILTER_DEVICE_EXTENSION
 {
+    PKSDEVICE_HEADER KsHeader;        // MUST be first
     PDEVICE_OBJECT LowerDeviceObject; // 下层 FDO
     PDEVICE_OBJECT Pdo;               // 真正的 PDO（PhysicalDeviceObject）
     UNICODE_STRING DeviceName;        // 自建设备名
     BOOLEAN EnableAudioProcessing;    // 是否启用 EQ/音量
     LONG DeviceIndex;                 // 设备序号
-    PVOID KsHeader;                   // KS 设备头句柄
     PKSFILTERFACTORY FilterFactory;   // 保存创建的 Filter 工厂
 } FILTER_DEVICE_EXTENSION, *PFILTER_DEVICE_EXTENSION;
-
+#include <stddef.h>
+C_ASSERT(offsetof(FILTER_DEVICE_EXTENSION, KsHeader) == 0);
 // ============================================================================
 // DriverEntry：驱动程序入口，注册分发函数并创建控制设备
 // ============================================================================
@@ -46,6 +71,17 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
     UNREFERENCED_PARAMETER(RegistryPath);
     DbgPrint("==[KSFilter] DriverEntry Called==\n");
+    //  先把 KS 的主分发表挂上（不会覆盖你自己的分发）
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_CREATE);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_CLOSE);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_DEVICE_CONTROL);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_READ);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_WRITE);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_FLUSH_BUFFERS);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_QUERY_SECURITY);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_SET_SECURITY);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_POWER);
+    KsSetMajorFunctionHandler(DriverObject, IRP_MJ_SYSTEM_CONTROL);
 
     // 注册控制设备的 IRP 分发函数（CREATE / CLOSE / IOCTL）
     DriverObject->MajorFunction[IRP_MJ_CREATE] = AudioVolumeControl_DispatchCreate;
@@ -117,7 +153,7 @@ NTSTATUS AddDevice(PDRIVER_OBJECT DriverObject, PDEVICE_OBJECT PhysicalDeviceObj
         DriverObject,
         sizeof(FILTER_DEVICE_EXTENSION),
         &deviceName,
-        FILE_DEVICE_UNKNOWN,
+        FILE_DEVICE_KS,
         0,
         FALSE,
         &filterDevice);
@@ -373,6 +409,19 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
         if (!devExt->FilterFactory)
         {
             PKSFILTERFACTORY factory = NULL;
+
+            // ……KsAllocateDeviceHeader / KsSetDevicePnpAndBaseObject 之后
+            SetupPins(); // 必须在 SanityCheck / 注册工厂前调用
+            // 在 KsCreateFilterFactory 调用之前插入：
+            NTSTATUS chk = SanityCheckKsFilterDesc(&FilterDescriptor);
+            if (!NT_SUCCESS(chk))
+            {
+                DbgPrint("[KSF][CHK] Descriptor invalid: 0x%08X — abort factory\n", chk);
+                Irp->IoStatus.Status = chk;
+                IoCompleteRequest(Irp, IO_NO_INCREMENT);
+                return chk;
+            }
+
             NTSTATUS regStatus = KsCreateFilterFactory(
                 DeviceObject,             // FDO
                 &FilterDescriptor,        // 你的拓扑描述符（确保 extern 名称一致）
@@ -495,4 +544,251 @@ NTSTATUS QueryHardwareIdWithIrp(PDEVICE_OBJECT targetDevice, WCHAR *buffer, ULON
     }
 
     return status;
+}
+
+//
+// ======== Minimal & WDK-old-safe KS Filter Sanity Check ========
+// 仅依赖 <ntddk.h>, <ks.h>, <ksmedia.h>，无 C++11/CRT；适配把字段放在 PinDescriptor 的头文件布局。
+// 使用：KsCreateFilterFactory 之前调用 SanityCheckKsFilterDesc(&FilterDescriptor)
+//
+
+#ifndef STATUS_INVALID_PARAMETER
+#define STATUS_INVALID_PARAMETER ((NTSTATUS)0xC000000DL)
+#endif
+#ifndef STATUS_INVALID_PARAMETER_1
+#define STATUS_INVALID_PARAMETER_1 ((NTSTATUS)0xC00000EFL)
+#endif
+#ifndef STATUS_INVALID_PARAMETER_2
+#define STATUS_INVALID_PARAMETER_2 ((NTSTATUS)0xC00000F0L)
+#endif
+#ifndef STATUS_INVALID_PARAMETER_3
+#define STATUS_INVALID_PARAMETER_3 ((NTSTATUS)0xC00000F1L)
+#endif
+#ifndef STATUS_INVALID_PARAMETER_4
+#define STATUS_INVALID_PARAMETER_4 ((NTSTATUS)0xC00000F2L)
+#endif
+
+#define KSFCHK_PREFIX "[KSF][CHK] "
+
+// 兼容 GUID* / GUID& / NULL 的比较（避免 IsEqualGUID 的签名差异）
+static __inline BOOLEAN EqualGuidPtr(const GUID *a, const GUID *b)
+{
+    if (a == NULL || b == NULL)
+        return FALSE;
+    return RtlEqualMemory(a, b, sizeof(GUID)) ? TRUE : FALSE;
+}
+
+#define KSFCHK_FAIL(_st, _fmt, _a1)        \
+    do                                     \
+    {                                      \
+        DbgPrint(KSFCHK_PREFIX _fmt, _a1); \
+        return (_st);                      \
+    } while (0)
+#define KSFCHK_FAIL2(_st, _fmt, _a1, _a2)       \
+    do                                          \
+    {                                           \
+        DbgPrint(KSFCHK_PREFIX _fmt, _a1, _a2); \
+        return (_st);                           \
+    } while (0)
+
+static NTSTATUS _CheckDataRanges_EX(const KSPIN_DESCRIPTOR_EX *ex, ULONG pinIndex)
+{
+    const KSPIN_DESCRIPTOR *pd = &ex->PinDescriptor;
+
+    if (pd->DataRangesCount == 0)
+    {
+        KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_3, "Pin[%lu]: DataRangesCount=0\n", pinIndex, 0);
+    }
+    if (pd->DataRanges == NULL)
+    {
+        KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_3, "Pin[%lu]: DataRanges=NULL\n", pinIndex, 0);
+    }
+
+    // 逐项检查基本尺寸
+    {
+        ULONG i;
+        for (i = 0; i < pd->DataRangesCount; ++i)
+        {
+            PKSDATARANGE p = pd->DataRanges[i];
+            if (p == NULL)
+            {
+                KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_3, "Pin[%lu]: DataRanges[%lu]=NULL\n", pinIndex, i);
+            }
+            if (p->FormatSize < sizeof(KSDATARANGE))
+            {
+                DbgPrint(KSFCHK_PREFIX "Pin[%lu]: DataRanges[%lu].FormatSize too small: %lu\n",
+                         pinIndex, i, (ULONG)p->FormatSize);
+                return STATUS_INVALID_PARAMETER_3;
+            }
+        }
+    }
+    return STATUS_SUCCESS;
+}
+
+static NTSTATUS _CheckOnePin_EX(const KSPIN_DESCRIPTOR_EX *ex, ULONG pinIndex)
+{
+    if (ex == NULL)
+    {
+        KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_2, "Pin[%lu]: descriptor=NULL\n", pinIndex, 0);
+    }
+
+    const KSPIN_DESCRIPTOR *pd = (const KSPIN_DESCRIPTOR *)&ex->PinDescriptor;
+
+    // 常见字段都在 PinDescriptor 里：Category/Name/Communication/DataRanges...
+    if (pd->Category == NULL)
+    {
+        KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_2, "Pin[%lu]: Category=NULL\n", pinIndex, 0);
+    }
+    if (pd->Name == NULL)
+    {
+        KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_2, "Pin[%lu]: Name=NULL\n", pinIndex, 0);
+    }
+
+    // DataRanges
+    {
+        NTSTATUS st = _CheckDataRanges_EX(ex, pinIndex);
+        if (!NT_SUCCESS(st))
+            return st;
+    }
+
+    // 通信/流向的“合理性”提示（不强制）
+    if (pd->Communication == KSPIN_COMMUNICATION_SINK && pd->DataFlow != KSPIN_DATAFLOW_IN)
+    {
+        DbgPrint(KSFCHK_PREFIX "Pin[%lu]: Communication=SINK but DataFlow!=IN (warn)\n", pinIndex);
+    }
+    if (pd->Communication == KSPIN_COMMUNICATION_SOURCE && pd->DataFlow != KSPIN_DATAFLOW_OUT)
+    {
+        DbgPrint(KSFCHK_PREFIX "Pin[%lu]: Communication=SOURCE but DataFlow!=OUT (warn)\n", pinIndex);
+    }
+
+    return STATUS_SUCCESS;
+}
+
+static NTSTATUS _CheckConnection(const KSFILTER_DESCRIPTOR *d, const KSTOPOLOGY_CONNECTION *c, ULONG idx)
+{
+    if (c == NULL)
+    {
+        KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_4, "Connection[%lu]=NULL\n", idx, 0);
+    }
+
+    // KSFILTER_NODE 表示 Filter 级别的 Pin，下标需 < PinDescriptorsCount
+    if (c->FromNode == KSFILTER_NODE)
+    {
+        if (c->FromNodePin >= d->PinDescriptorsCount)
+        {
+            KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_4, "Conn[%lu]: FromPin=%lu OOR\n", idx, (ULONG)c->FromNodePin);
+        }
+    }
+    else
+    {
+        if (d->NodeDescriptorsCount == 0 || c->FromNode >= d->NodeDescriptorsCount)
+        {
+            KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_4, "Conn[%lu]: FromNode=%lu OOR\n", idx, (ULONG)c->FromNode);
+        }
+    }
+
+    if (c->ToNode == KSFILTER_NODE)
+    {
+        if (c->ToNodePin >= d->PinDescriptorsCount)
+        {
+            KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_4, "Conn[%lu]: ToPin=%lu OOR\n", idx, (ULONG)c->ToNodePin);
+        }
+    }
+    else
+    {
+        if (d->NodeDescriptorsCount == 0 || c->ToNode >= d->NodeDescriptorsCount)
+        {
+            KSFCHK_FAIL2(STATUS_INVALID_PARAMETER_4, "Conn[%lu]: ToNode=%lu OOR\n", idx, (ULONG)c->ToNode);
+        }
+    }
+
+    return STATUS_SUCCESS;
+}
+
+extern "C" NTSTATUS SanityCheckKsFilterDesc(const KSFILTER_DESCRIPTOR *d)
+{
+    if (d == NULL)
+    {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    // Pins
+    if (d->PinDescriptorsCount == 0 || d->PinDescriptors == NULL)
+    {
+        DbgPrint(KSFCHK_PREFIX "Pins missing (count=%lu, ptr=%p)\n",
+                 (ULONG)d->PinDescriptorsCount, d->PinDescriptors);
+        return STATUS_INVALID_PARAMETER_1;
+    }
+    if (d->PinDescriptorSize != sizeof(KSPIN_DESCRIPTOR_EX))
+    {
+        DbgPrint(KSFCHK_PREFIX "PinDescriptorSize mismatch: %lu vs %lu\n",
+                 (ULONG)d->PinDescriptorSize, (ULONG)sizeof(KSPIN_DESCRIPTOR_EX));
+        return STATUS_INVALID_PARAMETER_1;
+    }
+
+    // Categories（可空，做弱提示）
+    if (d->CategoriesCount != 0 && d->Categories == NULL)
+    {
+        return STATUS_INVALID_PARAMETER_2;
+    }
+
+    // Nodes（可为 0；若非 0 则数组不可空且尺寸匹配）
+    if (d->NodeDescriptorsCount != 0)
+    {
+        if (d->NodeDescriptors == NULL)
+        {
+            return STATUS_INVALID_PARAMETER_2;
+        }
+        if (d->NodeDescriptorSize != sizeof(KSNODE_DESCRIPTOR))
+        {
+            DbgPrint(KSFCHK_PREFIX "NodeDescriptorSize mismatch\n");
+            return STATUS_INVALID_PARAMETER_2;
+        }
+    }
+
+    // Connections（可为 0；若非 0 则数组不可空）
+    if (d->ConnectionsCount != 0 && d->Connections == NULL)
+    {
+        return STATUS_INVALID_PARAMETER_4;
+    }
+
+    // 逐 Pin 检查
+    {
+        ULONG i;
+        for (i = 0; i < d->PinDescriptorsCount; ++i)
+        {
+            const KSPIN_DESCRIPTOR_EX *ex = &d->PinDescriptors[i];
+            NTSTATUS st = _CheckOnePin_EX(ex, i);
+            if (!NT_SUCCESS(st))
+                return st;
+        }
+    }
+
+    // 逐 Connection 检查
+    {
+        ULONG i;
+        for (i = 0; i < d->ConnectionsCount; ++i)
+        {
+            NTSTATUS st = _CheckConnection(d, &d->Connections[i], i);
+            if (!NT_SUCCESS(st))
+                return st;
+        }
+    }
+
+    // 参考 GUID（有的头是 GUID*）
+    // 仅提示，不强制失败
+    __try
+    {
+        if (d->ReferenceGuid && EqualGuidPtr(d->ReferenceGuid, &GUID_NULL))
+        {
+            DbgPrint(KSFCHK_PREFIX "ReferenceGuid is GUID_NULL (warn)\n");
+        }
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+        DbgPrint(KSFCHK_PREFIX "ReferenceGuid access raised (ignored)\n");
+    }
+
+    DbgPrint(KSFCHK_PREFIX "Descriptor validation passed.\n");
+    return STATUS_SUCCESS;
 }
