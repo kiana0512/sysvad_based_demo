@@ -51,6 +51,9 @@
     <ClInclude Include="KsSanityCheck.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\AudioVolumeControl\KianaControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AudioProcessing\ApplyAudioProcessing.cpp">
@@ -71,13 +74,7 @@
     <ClCompile Include="..\AudioVolumeControl\AudioControlDispatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AudioVolumeControl\AudioEQDispatch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\AudioVolumeControl\eq.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\AudioVolumeControl\AudioControlCore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

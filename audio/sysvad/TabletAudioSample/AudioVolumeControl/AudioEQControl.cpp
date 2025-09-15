@@ -1,30 +1,31 @@
+//
+// AudioEQControl.cpp —— 12 段双声道串联 biquad（Q15）
+//
+// 只在本编译单元实现一次 EQControl_Apply，杜绝重定义。
+// 依赖 <ntddk.h> 提供类型；不再自定义 BYTE。
+// 
+
 #include <ntddk.h>
 #include "AudioEQControl.h"
-#define EQ_BANDS 12
 
-// ---------------------------
-// 全局变量定义
-// ---------------------------
+#define CLAMP16(v)  (((v) > 32767) ? 32767 : (((v) < -32768) ? -32768 : (v)))
 
-// EQ 滤波器状态（每段一个 Biquad 滤波器）
-EQBandCoeffs g_EqBands[EQ_BANDS] = {0};
-EQBandRuntime g_EqStates[EQ_BANDS][2] = {0};
+// ===== 全局：系数与状态（仅 EQ 模块内部使用） ===============================
+EQBandCoeffs  g_EqBands[EQ_BANDS]     = { 0 };
+EQBandRuntime g_EqStates[EQ_BANDS][2] = { 0 };  // [band][0=L,1=R]
 
-// PCM 缓冲区（用于用户态测试数据）
-UCHAR g_EqTestBuffer[EQ_TEST_BUFFER_SIZE] = {0};
+// （可选）测试缓冲：与 AudioControlDispatch.cpp 的 send/recv PCM 调试配合
+UCHAR g_EqTestBuffer[EQ_TEST_BUFFER_SIZE] = { 0 };
 ULONG g_EqTestSize = 0;
 
-// Q15 乘法
-__forceinline int MulQ15(int a, int b)
+// Q15 乘法：返回 (a*b)>>15
+__forceinline static LONG MulQ15(LONG a, LONG b)
 {
-    return (int)(((__int64)a * (__int64)b) >> 15);
+    return (LONG)(((__int64)a * (__int64)b) >> 15);
 }
 
-// ---------------------------
-// EQ 初始化（可选清空状态）
-// ---------------------------
-
-void EQControl_Init()
+// =================== 初始化 ===================
+void EQControl_Init(void)
 {
     for (int i = 0; i < EQ_BANDS; ++i)
     {
@@ -36,133 +37,108 @@ void EQControl_Init()
         g_EqStates[i][1].x1 = g_EqStates[i][1].x2 = 0;
         g_EqStates[i][1].y1 = g_EqStates[i][1].y2 = 0;
     }
-
     g_EqTestSize = 0;
+
     DbgPrint("[EQ] EQControl_Init complete. All state reset.\n");
 }
 
-// ---------------------------
-// 设置 EQ Q15 系数（用户态传入）
-// ---------------------------
-
-void EQControl_SetBiquadCoeffs(const EQCoeffParams *params)
+// =================== 设置/读取系数 ===================
+void EQControl_SetBiquadCoeffs(_In_ const EQCoeffParams* params)
 {
-    if (!params || params->BandCount > EQ_BANDS)
+    if (!params || params->BandCount <= 0 || params->BandCount > EQ_BANDS)
     {
-        DbgPrint("[EQ] Invalid EQCoeffParams pointer or BandCount\n");
+        DbgPrint("[EQ] SetBiquadCoeffs: invalid params or BandCount=%d\n",
+                 params ? params->BandCount : -1);
         return;
     }
 
-    for (int i = 0; i < params->BandCount; ++i)
+    const int n = (int)params->BandCount;
+    for (int i = 0; i < n; ++i)
     {
-        g_EqBands[i].b0 = params->Bands[i].b0;
-        g_EqBands[i].b1 = params->Bands[i].b1;
-        g_EqBands[i].b2 = params->Bands[i].b2;
-        g_EqBands[i].a1 = params->Bands[i].a1;
-        g_EqBands[i].a2 = params->Bands[i].a2;
+        g_EqBands[i] = params->Bands[i];
 
-        // 重置滤波器历史状态（避免爆音）
+        // 换系数时清历史，避免爆音/冲击
         g_EqStates[i][0].x1 = g_EqStates[i][0].x2 = 0;
         g_EqStates[i][0].y1 = g_EqStates[i][0].y2 = 0;
         g_EqStates[i][1].x1 = g_EqStates[i][1].x2 = 0;
         g_EqStates[i][1].y1 = g_EqStates[i][1].y2 = 0;
 
-        DbgPrint("[EQ] Band[%02d] Q15 Coeff: b0=%d, b1=%d, b2=%d, a1=%d, a2=%d\n",
-                 i, params->Bands[i].b0, params->Bands[i].b1, params->Bands[i].b2,
-                 params->Bands[i].a1, params->Bands[i].a2);
+        DbgPrint("[EQ] Band[%02d] b0=%ld b1=%ld b2=%ld a1=%ld a2=%ld\n",
+                 i, g_EqBands[i].b0, g_EqBands[i].b1, g_EqBands[i].b2,
+                    g_EqBands[i].a1, g_EqBands[i].a2);
     }
 
-    DbgPrint("[EQ] SetBiquadCoeffs updated. BandCount=%d\n", params->BandCount);
+    DbgPrint("[EQ] SetBiquadCoeffs OK, BandCount=%d\n", n);
 }
-void EQControl_GetBiquadCoeffs(EQCoeffParams *outParams)
+
+void EQControl_GetBiquadCoeffs(_Out_ EQCoeffParams* outParams)
 {
-    if (!outParams)
-        return;
+    if (!outParams) return;
 
     outParams->BandCount = EQ_BANDS;
-
     for (int i = 0; i < EQ_BANDS; ++i)
-    {
-        outParams->Bands[i].b0 = g_EqBands[i].b0;
-        outParams->Bands[i].b1 = g_EqBands[i].b1;
-        outParams->Bands[i].b2 = g_EqBands[i].b2;
-        outParams->Bands[i].a1 = g_EqBands[i].a1;
-        outParams->Bands[i].a2 = g_EqBands[i].a2;
+        outParams->Bands[i] = g_EqBands[i];
 
-        DbgPrint("[EQ] GetBand[%02d]: b0=%d b1=%d b2=%d a1=%d a2=%d\n",
-                 i,
-                 g_EqBands[i].b0, g_EqBands[i].b1, g_EqBands[i].b2,
-                 g_EqBands[i].a1, g_EqBands[i].a2);
-    }
-
-    DbgPrint("[EQ] EQControl_GetBiquadCoeffs: OK, BandCount=%d\n", EQ_BANDS);
+    DbgPrint("[EQ] GetBiquadCoeffs: BandCount=%d\n", outParams->BandCount);
 }
-void EQControl_Apply(BYTE *pBuffer, ULONG length)
+
+// =================== EQ 处理（立体声 16-bit） ===================
+void EQControl_Apply(_Inout_updates_bytes_(length) UCHAR* pBuffer, _In_ ULONG length)
 {
-    if (!pBuffer || length < 4)
+    if (!pBuffer || length < sizeof(SHORT) * 2)
         return;
 
-    SHORT *samples = (SHORT *)pBuffer;
-    ULONG sampleCount = length / sizeof(SHORT); // 总样本数（包含左右声道）
-    if (sampleCount % 2 != 0)
-        sampleCount--; // 必须为偶数，防止越界
+    // 2 字节对齐
+    ULONG aligned = length & ~(sizeof(SHORT) - 1);
+    SHORT* s      = (SHORT*)pBuffer;
+    ULONG  nSmpl  = aligned / sizeof(SHORT);
 
-    for (ULONG i = 0; i < sampleCount; i += 2)
+    // 立体声：需要偶数样本
+    if ((nSmpl & 1) != 0)
+        nSmpl--;
+
+    for (ULONG i = 0; i + 1 < nSmpl; i += 2)
     {
-        int left = samples[i];
-        int right = samples[i + 1];
+        LONG l = s[i];
+        LONG r = s[i + 1];
 
-        // 对每个通道分别进行 12 段 EQ 串联处理
-        for (int band = 0; band < EQ_BANDS; ++band)
+        // 12 段串联
+        for (int b = 0; b < EQ_BANDS; ++b)
         {
-            EQBandCoeffs *coeff = &g_EqBands[band];
-            EQBandRuntime *stateL = &g_EqStates[band][0]; // 左声道
-            EQBandRuntime *stateR = &g_EqStates[band][1]; // 右声道
+            EQBandCoeffs*  c = &g_EqBands[b];
+            EQBandRuntime* L = &g_EqStates[b][0];
+            EQBandRuntime* R = &g_EqStates[b][1];
 
-            // ----------- 左声道处理 -----------
-            int x0 = left;
-            int y0 = MulQ15(coeff->b0, x0) +
-                     MulQ15(coeff->b1, stateL->x1) +
-                     MulQ15(coeff->b2, stateL->x2) -
-                     MulQ15(coeff->a1, stateL->y1) -
-                     MulQ15(coeff->a2, stateL->y2);
+            // Left
+            {
+                const LONG x0 = l;
+                const LONG y0 =  MulQ15(c->b0, x0)
+                                +MulQ15(c->b1, L->x1)
+                                +MulQ15(c->b2, L->x2)
+                                -MulQ15(c->a1, L->y1)
+                                -MulQ15(c->a2, L->y2);
+                L->x2 = L->x1; L->x1 = x0;
+                L->y2 = L->y1; L->y1 = y0;
+                l = y0;
+            }
 
-            // 更新状态
-            stateL->x2 = stateL->x1;
-            stateL->x1 = x0;
-            stateL->y2 = stateL->y1;
-            stateL->y1 = y0;
-            left = y0;
-
-            // ----------- 右声道处理 -----------
-            x0 = right;
-            y0 = MulQ15(coeff->b0, x0) +
-                 MulQ15(coeff->b1, stateR->x1) +
-                 MulQ15(coeff->b2, stateR->x2) -
-                 MulQ15(coeff->a1, stateR->y1) -
-                 MulQ15(coeff->a2, stateR->y2);
-
-            stateR->x2 = stateR->x1;
-            stateR->x1 = x0;
-            stateR->y2 = stateR->y1;
-            stateR->y1 = y0;
-            right = y0;
+            // Right
+            {
+                const LONG x0 = r;
+                const LONG y0 =  MulQ15(c->b0, x0)
+                                +MulQ15(c->b1, R->x1)
+                                +MulQ15(c->b2, R->x2)
+                                -MulQ15(c->a1, R->y1)
+                                -MulQ15(c->a2, R->y2);
+                R->x2 = R->x1; R->x1 = x0;
+                R->y2 = R->y1; R->y1 = y0;
+                r = y0;
+            }
         }
 
-        // 饱和
-        if (left > 32767)
-            left = 32767;
-        if (left < -32768)
-            left = -32768;
-        if (right > 32767)
-            right = 32767;
-        if (right < -32768)
-            right = -32768;
-
-        // 写回结果
-        samples[i] = (SHORT)left;
-        samples[i + 1] = (SHORT)right;
+        s[i]     = (SHORT)CLAMP16(l);
+        s[i + 1] = (SHORT)CLAMP16(r);
     }
 
-    DbgPrint("[EQ] EQControl_Apply finished. Samples processed: %lu\n", sampleCount / 2);
+    DbgPrint("[EQ] Apply done. frames=%lu\n", (ULONG)(nSmpl / 2));
 }

@@ -9,6 +9,7 @@
 #include "FilterTopology.h"
 #include "KsHelper.h"
 #include "KsSanityCheck.h"
+
 extern "C" KSFILTER_DESCRIPTOR FilterDescriptor; // 仅声明，不能写等号
 extern const GUID KSCATEGORY_AUDIO_GUID;         // 你定义的音频类别 GUID（就是 KSCATEGORY_AUDIO）
 // ===== AVStream 兼容兜底：有的 WDK 不公开 KSDEVICE_HEADER =====
@@ -50,23 +51,41 @@ UNICODE_STRING g_DeviceName = RTL_CONSTANT_STRING(L"\\Device\\kiana_AudioControl
 UNICODE_STRING g_SymLinkName = RTL_CONSTANT_STRING(L"\\DosDevices\\kiana_AudioControl");
 
 // ============================================================================
-// 设备扩展结构体（每个 KS Filter 实例都拥有）
+// 设备扩展结构体（每个 KS Filter 实例）—— 修正版
+// 关键点：KSDEVICE_HEADER 必须是“内嵌且为首字段”，KS 框架通过它定位 KSDEVICE
 // ============================================================================
+
+#include <stddef.h> // for offsetof
+
 typedef struct _FILTER_DEVICE_EXTENSION
 {
-    PKSDEVICE_HEADER KsHeader;        // MUST be first
+    //
+    // *** MUST BE FIRST ***
+    // 由 KS 在 KsInitializeDevice 成功时初始化；绝对不要把它改成指针或手工赋值！
+    //
+    KSDEVICE_HEADER KsDeviceHeader;
+
+    // 设备栈关系
     PDEVICE_OBJECT LowerDeviceObject; // 下层 FDO
-    PDEVICE_OBJECT Pdo;               // 真正的 PDO（PhysicalDeviceObject）
-    UNICODE_STRING DeviceName;        // 自建设备名
-    BOOLEAN EnableAudioProcessing;    // 是否启用 EQ/音量
-    LONG DeviceIndex;                 // 设备序号
-    PKSFILTERFACTORY FilterFactory;   // 保存创建的 Filter 工厂
-                                    // === 新增：幂等保护 ===
-    BOOLEAN KsInited; // 是否已调用 KsInitializeDevice 成功
-    BOOLEAN Removed;  // 是否已走过 IRP_MN_REMOVE_DEVICE
+    PDEVICE_OBJECT Pdo;               // 物理设备对象（PDO）
+
+    // 运行/配置
+    BOOLEAN EnableAudioProcessing; // 是否目标设备（匹配到 USB\VID_0A67&PID_30A2&MI_00）
+    LONG DeviceIndex;              // 实例序号
+    BOOLEAN KsInited;              // 是否已调用过 KsInitializeDevice
+    BOOLEAN Removed;               // 是否已处理过 REMOVE
+
+    // KS 相关
+    PKSFILTERFACTORY FilterFactory; // 注册成功后保存，用于 Stop/Remove 清理
+
+    // 可选：显示用名字 / 符号链接
+    UNICODE_STRING DeviceName;   // 我们创建的 \Device\AudioFilter_N
+    BOOLEAN SymbolicLinkCreated; // \DosDevices\KianaAudioEQ_N 是否已创建
 } FILTER_DEVICE_EXTENSION, *PFILTER_DEVICE_EXTENSION;
-#include <stddef.h>
-C_ASSERT(offsetof(FILTER_DEVICE_EXTENSION, KsHeader) == 0);
+
+// 断言：KSDEVICE_HEADER 必须在偏移 0（即作为首字段）
+C_ASSERT(offsetof(FILTER_DEVICE_EXTENSION, KsDeviceHeader) == 0);
+
 // ============================================================================
 // DriverEntry：驱动程序入口，注册分发函数并创建控制设备
 // ============================================================================
@@ -282,17 +301,47 @@ void DriverUnload(PDRIVER_OBJECT DriverObject)
     }
     DbgPrint("==[KSFilter] DriverUnload complete==\n");
 }
-static NTSTATUS StartComplete(PDEVICE_OBJECT DevObj, PIRP Irp, PVOID Context)
+// ============================================================================
+// AudioFilter_PnPDispatch：处理即插即用 IRP（包含 START / REMOVE 等）—— 修正版
+// 要点：
+//  1) START：先下发 → 成功后再 KsInitializeDevice（只做一次）→ 再 KsCreateFilterFactory
+//  2) KsAcquireDevice 之前，必须通过 KsGetDeviceForDeviceObject 得到合法 PKSDEVICE
+//  3) REMOVE：删除 FilterFactory、符号链接，Detach + Delete；不要手动“释放”内嵌 KSDEVICE_HEADER
+// ============================================================================
+
+//
+// 完成例程：用于把下层 START 的完成“同步化”，让我们能在本层继续处理并由本层完成 IRP
+//
+static NTSTATUS
+StartComplete(
+    PDEVICE_OBJECT DevObj,
+    PIRP Irp,
+    PVOID Context)
 {
     UNREFERENCED_PARAMETER(DevObj);
     UNREFERENCED_PARAMETER(Irp);
     KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
-    return STATUS_MORE_PROCESSING_REQUIRED; // 告诉内核：上层来完成
+    // 把 IRP 的控制权交还给上层（本驱动层）来完成，所以下面会 IoCompleteRequest
+    return STATUS_MORE_PROCESSING_REQUIRED;
 }
-// ============================================================================
-// AudioFilter_PnPDispatch：处理即插即用 IRP（包括卸载）
-// ============================================================================
-NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+
+//
+// ===================== PnP 分发（修正版）=====================
+// 关键改动：
+// 1) IRP_MN_START_DEVICE：
+//    - 先同步等待下层 START 完成
+//    - 再调用 KsInitializeDevice(FDO, PDO, Lower, &g_KsDeviceDescriptor)
+//    - 再用 KsGetDeviceForDeviceObject() 拿到 PKSDEVICE 并 KsAcquireDevice() 包裹 KsCreateFilterFactory()
+// 2) IRP_MN_REMOVE_DEVICE：
+//    - 先把 IRP 下发
+//    - 删除 FilterFactory；删除符号链接；Detach & Delete
+//    - 不要去“释放”内嵌的 KSDEVICE_HEADER（没有这个 Free，且它在扩展里是内嵌对象）
+// 3) 其他 PnP：直通
+//
+NTSTATUS
+AudioFilter_PnPDispatch(
+    PDEVICE_OBJECT DeviceObject,
+    PIRP Irp)
 {
     PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(Irp);
     PFILTER_DEVICE_EXTENSION devExt = (PFILTER_DEVICE_EXTENSION)DeviceObject->DeviceExtension;
@@ -303,75 +352,77 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     {
         DbgPrint("[KSFilter] IRP_MN_REMOVE_DEVICE received\n");
 
-        // 删除符号链接（如果你为每个实例创建了）
-        WCHAR linkNameBuffer[64] = {0};
-        _snwprintf(linkNameBuffer, 64, L"\\DosDevices\\KianaAudioEQ_%d", devExt->DeviceIndex);
-        UNICODE_STRING devLink;
-        RtlInitUnicodeString(&devLink, linkNameBuffer);
-        IoDeleteSymbolicLink(&devLink);
-
-        // 清理扩展里的名字（避免重复释放）
-        if (devExt->DeviceName.Buffer)
-        {
-            RtlFreeUnicodeString(&devExt->DeviceName);
-            devExt->DeviceName.Buffer = NULL;
-            devExt->DeviceName.Length = devExt->DeviceName.MaximumLength = 0;
-        }
-
-        // 先把 IRP 下发给下层
+        // 建议在本层做清理前，先把 REMOVE 下发，让下层也做自己的清理
         IoSkipCurrentIrpStackLocation(Irp);
         NTSTATUS st = IoCallDriver(devExt->LowerDeviceObject, Irp);
 
-        //  释放 KS 设备头
-
+        // 显式删除我们注册的 Filter Factory（我们使用了 KSCREATE_ITEM_FREEONSTOP，但显式删更稳妥）
         if (devExt->FilterFactory)
         {
             KsDeleteFilterFactory(devExt->FilterFactory);
             devExt->FilterFactory = NULL;
         }
 
-        if (devExt->KsHeader)
+        // 删除实例符号链接（你在 AddDevice 里按 "\DosDevices\KianaAudioEQ_%d" 创建的）
         {
-            KsFreeDeviceHeader(devExt->KsHeader);
-            devExt->KsHeader = NULL;
+            WCHAR linkNameBuffer[64] = {0};
+            _snwprintf(linkNameBuffer, 64, L"\\DosDevices\\KianaAudioEQ_%ld", devExt->DeviceIndex);
+            UNICODE_STRING devLink;
+            RtlInitUnicodeString(&devLink, linkNameBuffer);
+            IoDeleteSymbolicLink(&devLink);
         }
 
-        // 再 detach & delete 自己
+        // 释放我们手动分配的设备名缓冲（AddDevice 用 ExAllocatePool 分配的）
+        if (devExt->DeviceName.Buffer)
+        {
+            ExFreePool(devExt->DeviceName.Buffer);
+            devExt->DeviceName.Buffer = NULL;
+            devExt->DeviceName.Length = devExt->DeviceName.MaximumLength = 0;
+        }
+
+        // 从设备栈脱离并删除本设备对象
         if (devExt->LowerDeviceObject)
         {
             IoDetachDevice(devExt->LowerDeviceObject);
             devExt->LowerDeviceObject = NULL;
         }
         IoDeleteDevice(DeviceObject);
-
         return st;
+    }
+
+    case IRP_MN_STOP_DEVICE:
+    {
+        DbgPrint("[KSFilter] IRP_MN_STOP_DEVICE received\n");
+
+        // STOP 通常也要把工厂撤销（FREEONSTOP 会清理 KSCREATE_ITEM）。显式删以避免重复注册。
+        if (devExt->FilterFactory)
+        {
+            KsDeleteFilterFactory(devExt->FilterFactory);
+            devExt->FilterFactory = NULL;
+        }
+
+        // 继续传下层
+        IoSkipCurrentIrpStackLocation(Irp);
+        return IoCallDriver(devExt->LowerDeviceObject, Irp);
     }
 
     case IRP_MN_START_DEVICE:
     {
         DbgPrint("[KSFilter] IRP_MN_START_DEVICE received\n");
 
-        // -----------------------------------------------------
-        // 1) 同步下发 START IRP，并等待它真正完成
-        // -----------------------------------------------------
+        // ---------- 1) 同步等待下层 START 完成 ----------
         KEVENT evt;
         KeInitializeEvent(&evt, NotificationEvent, FALSE);
 
         IoCopyCurrentIrpStackLocationToNext(Irp);
-        IoSetCompletionRoutine(
-            Irp,
-            StartComplete, // 完成例程：设置 Event 并返回 STATUS_MORE_PROCESSING_REQUIRED
-            &evt,
-            TRUE, TRUE, TRUE);
+        IoSetCompletionRoutine(Irp, StartComplete, &evt, TRUE, TRUE, TRUE);
 
         NTSTATUS downStatus = IoCallDriver(devExt->LowerDeviceObject, Irp);
         if (downStatus == STATUS_PENDING)
         {
-            KeWaitForSingleObject(&evt, Executive, KernelMode, FALSE, nullptr);
+            KeWaitForSingleObject(&evt, Executive, KernelMode, FALSE, NULL);
             downStatus = Irp->IoStatus.Status;
         }
-
-        //  注意：这里只能用最终的 START 状态来判定
         if (!NT_SUCCESS(downStatus))
         {
             DbgPrint("[KSFilter] START failed in lower stack: 0x%08X\n", downStatus);
@@ -380,9 +431,7 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
             return downStatus;
         }
 
-        // -----------------------------------------------------
-        // 2) 非目标设备：直接成功返回，不做 KS 初始化
-        // -----------------------------------------------------
+        // ---------- 2) 非目标设备：直接完成 START ----------
         if (!devExt->EnableAudioProcessing)
         {
             DbgPrint("[KSFilter] Not target device, skipping KS setup\n");
@@ -391,39 +440,37 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
             return STATUS_SUCCESS;
         }
 
-        // -----------------------------------------------------
-        // 3) 初始化 KSDEVICE（推荐用 KsInitializeDevice）
-        // -----------------------------------------------------
-        if (!devExt->KsHeader)
+        // ---------- 3) 初始化 KSDEVICE（老签名的正确参数顺序） ----------
+        // KsInitializeDevice(FDO, PDO, Lower, &g_KsDeviceDescriptor)
+        // 这一步会在“设备扩展首字段”处初始化 KSDEVICE_HEADER（前提是你把 KSDEVICE_HEADER 放在扩展的第 0 偏移）
+        NTSTATUS ksSt = KsInitializeDevice(
+            DeviceObject,              // FDO = 本层设备对象
+            devExt->Pdo,               // PDO = AddDevice 保存的 PhysicalDeviceObject
+            devExt->LowerDeviceObject, // Lower = IoAttachDeviceToDeviceStackSafe 的返回
+            &g_KsDeviceDescriptor      // 设备级描述子（我们后续用 FilterFactory 注册，描述子里 FilterCount 可为 0）
+        );
+        DbgPrint("[KSFilter] KsInitializeDevice(FDO, PDO, Lower, Desc): st=0x%08X\n", ksSt);
+        if (!NT_SUCCESS(ksSt))
         {
-            ASSERT((PVOID)&devExt->KsHeader == (PVOID)devExt); // KSDEVICE_HEADER 必须是扩展首字段
-
-            NTSTATUS ksSt = KsInitializeDevice(
-                DeviceObject,              // FDO
-                devExt->Pdo,               // PDO
-                devExt->LowerDeviceObject, // 下层 DO
-                nullptr                    // Descriptor=null，使用工厂方式
-            );
-            DbgPrint("[KSFilter] KsInitializeDevice: st=0x%08X\n", ksSt);
-            if (!NT_SUCCESS(ksSt))
-            {
-                Irp->IoStatus.Status = ksSt;
-                IoCompleteRequest(Irp, IO_NO_INCREMENT);
-                return ksSt;
-            }
-
-            devExt->KsHeader = (PKSDEVICE_HEADER)devExt;
-            DbgPrint("[KSFilter] KsHeader=%p (after KsInitializeDevice)\n", devExt->KsHeader);
+            Irp->IoStatus.Status = ksSt;
+            IoCompleteRequest(Irp, IO_NO_INCREMENT);
+            return ksSt;
         }
 
-        DbgPrint("[KS] FDO=%p, PDO=%p, Lower=%p, KsHeader=%p\n",
-                 DeviceObject, devExt->Pdo, devExt->LowerDeviceObject, devExt->KsHeader);
+        // （可选）验证：此时 KSDEVICE 已可取，用于后续 Acquire/Release
+        PKSDEVICE ksdev = KsGetDeviceForDeviceObject(DeviceObject);
+        DbgPrint("[KSFilter] KsDevice=%p (after KsInitializeDevice)\n", ksdev);
+        if (!ksdev)
+        {
+            Irp->IoStatus.Status = STATUS_DEVICE_DOES_NOT_EXIST;
+            IoCompleteRequest(Irp, IO_NO_INCREMENT);
+            return STATUS_DEVICE_DOES_NOT_EXIST;
+        }
 
-        // -----------------------------------------------------
-        // 4) 注册 Filter 工厂（只做一次）
-        // -----------------------------------------------------
+        // ---------- 4) 注册 Filter Factory（只做一次） ----------
         if (!devExt->FilterFactory)
         {
+            // 4.1 构造并校验 Filter 描述符（你已有的工具）
             SetupPins();
             NTSTATUS chk = SanityCheckKsFilterDesc(&FilterDescriptor);
             if (!NT_SUCCESS(chk))
@@ -434,25 +481,19 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
                 return chk;
             }
 
-            PKSDEVICE ksdev = KsGetDeviceForDeviceObject(DeviceObject); // 获取 KSDEVICE
-            if (!ksdev)
-            {
-                DbgPrint("[KSFilter][ERR] KsGetDeviceForDeviceObject returned NULL\n");
-                Irp->IoStatus.Status = STATUS_DEVICE_DOES_NOT_EXIST;
-                IoCompleteRequest(Irp, IO_NO_INCREMENT);
-                return STATUS_DEVICE_DOES_NOT_EXIST;
-            }
-
-            // 关键：建厂前后必须获取/释放 KS 设备互斥
+            // 4.2 进入 KS 设备临界区 → 创建工厂 → 释放临界区
             KsAcquireDevice(ksdev);
-            PKSFILTERFACTORY factory = nullptr;
+            PKSFILTERFACTORY factory = NULL;
             NTSTATUS regStatus = KsCreateFilterFactory(
-                DeviceObject,             // FDO
-                &FilterDescriptor,        // Filter 描述符
-                nullptr, nullptr,         // RefString / Security
-                KSCREATE_ITEM_FREEONSTOP, // 自动清理
-                nullptr, nullptr,         // Sleep/Wake
-                &factory);
+                DeviceObject,             // FDO（注意不是 PDO）
+                &FilterDescriptor,        // 过滤器描述符（Pins/Nodes/Connections/Properties 等）
+                NULL,                     // RefString
+                NULL,                     // SecurityDescriptor
+                KSCREATE_ITEM_FREEONSTOP, // STOP/REMOVE 自动清理 create-items
+                NULL,                     // SleepCallback（可空）
+                NULL,                     // WakeCallback（可空）
+                &factory                  // 返回的工厂句柄
+            );
             KsReleaseDevice(ksdev);
 
             if (!NT_SUCCESS(regStatus))
@@ -465,39 +506,22 @@ NTSTATUS AudioFilter_PnPDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
             devExt->FilterFactory = factory;
             DbgPrint("[KSFilter] KsCreateFilterFactory OK, factory=%p\n", factory);
+            DbgPrint("[KSFilter] FilterDescriptor=%p, Pins=%lu, Nodes=%lu\n",
+                     &FilterDescriptor,
+                     (ULONG)FilterDescriptor.PinDescriptorsCount,
+                     (ULONG)FilterDescriptor.NodeDescriptorsCount);
         }
 
-        DbgPrint("[KSFilter] FilterDescriptor=%p, Pins=%lu, Nodes=%lu\n",
-                 &FilterDescriptor,
-                 (ULONG)FilterDescriptor.PinDescriptorsCount,
-                 (ULONG)FilterDescriptor.NodeDescriptorsCount);
-
-        // -----------------------------------------------------
-        // 5) 成功完成 START
-        // -----------------------------------------------------
+        // ---------- 5) 完成 START ----------
         Irp->IoStatus.Status = STATUS_SUCCESS;
         IoCompleteRequest(Irp, IO_NO_INCREMENT);
         return STATUS_SUCCESS;
     }
 
-    case IRP_MN_QUERY_REMOVE_DEVICE:
-        // 常见 PnP 请求直接 passthrough
+    default:
+        // 其他 PnP IRP 直接透传给下层
         IoSkipCurrentIrpStackLocation(Irp);
         return IoCallDriver(devExt->LowerDeviceObject, Irp);
-
-    default:
-        // 其他 PnP 请求转发下层驱动处理
-        if (devExt->LowerDeviceObject)
-        {
-            IoSkipCurrentIrpStackLocation(Irp);
-            return IoCallDriver(devExt->LowerDeviceObject, Irp);
-        }
-        else
-        {
-            Irp->IoStatus.Status = STATUS_INVALID_DEVICE_REQUEST;
-            IoCompleteRequest(Irp, IO_NO_INCREMENT);
-            return STATUS_INVALID_DEVICE_REQUEST;
-        }
     }
 }
 

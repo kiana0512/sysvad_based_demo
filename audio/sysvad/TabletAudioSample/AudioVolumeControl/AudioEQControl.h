@@ -1,47 +1,39 @@
 #pragma once
+//
+// AudioEQControl.h —— EQ 控制接口（与 KS 驱动对齐）
+// 只声明 EQ 初始化/应用/读写系数；不定义 IOCTL；不声明分发函数。
+// 这里还定义调试用的共享常量 EQ_TEST_BUFFER_SIZE，并导出测试缓冲 extern，
+// 供 AudioControlDispatch.cpp 的 IOCTL_SEND/RECV_PCM 使用。
+//
 
 #include <ntddk.h>
 #include "AudioEQTypes.h"
-// 补充 BYTE 类型定义（如果没有）
-typedef unsigned char BYTE;
-// -------------------------
-// IOCTL 定义
-// -------------------------
-#define IOCTL_SET_EQ_PARAMS           CTL_CODE(FILE_DEVICE_UNKNOWN, 0x901, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_GET_EQ_PARAMS           CTL_CODE(FILE_DEVICE_UNKNOWN, 0x902, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_SET_EQ_GAIN_ARRAY       CTL_CODE(FILE_DEVICE_UNKNOWN, 0x903, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_SET_EQ_BIQUAD_COEFFS    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x910, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_GET_EQ_BIQUAD_COEFFS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x913, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_SEND_PCM                CTL_CODE(FILE_DEVICE_UNKNOWN, 0x911, METHOD_BUFFERED, FILE_WRITE_DATA)
-#define IOCTL_RECV_PCM                CTL_CODE(FILE_DEVICE_UNKNOWN, 0x912, METHOD_BUFFERED, FILE_READ_DATA)
 
-// -------------------------
-// EQ 相关参数
-// -------------------------
-#define EQ_BANDS            12
-#define MAX_EQ_BANDS        12
-#define EQ_TEST_BUFFER_SIZE 262144  // 256KB 缓冲区
+// === 共享给内核内多个编译单元的测试缓冲大小（默认 256 KB） ===
+#ifndef EQ_TEST_BUFFER_SIZE
+#define EQ_TEST_BUFFER_SIZE 262144u
+#endif
 
-// -------------------------
-// 全局缓冲（用于 PCM 处理测试）
-// -------------------------
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// 初始化：清空 12 段的系数与历史状态
+void EQControl_Init(void);
+
+// 下发/读取一整组 Q15 系数（前 BandCount 有效）
+// 换系数时内部会清历史状态，避免爆音
+void EQControl_SetBiquadCoeffs(_In_ const EQCoeffParams* params);
+void EQControl_GetBiquadCoeffs(_Out_ EQCoeffParams* outParams);
+
+// 对一帧 PCM（立体声 16-bit 小端）执行 12 段串联 EQ
+// 注意：统一使用 UCHAR*，避免 BYTE 未声明
+void EQControl_Apply(_Inout_updates_bytes_(length) UCHAR* pBuffer, _In_ ULONG length);
+
+// === 调试缓冲（由 AudioEQControl.cpp 定义；这里仅导出给分发模块使用） ===
 extern UCHAR g_EqTestBuffer[EQ_TEST_BUFFER_SIZE];
 extern ULONG g_EqTestSize;
 
-// -------------------------
-// 函数声明
-// -------------------------
-
-// 初始化
-void EQControl_Init();
-
-// PCM EQ 处理函数（Biquad 版本）
-void ProcessEqPcmBuffer(short* pcm, int samples);
-
-// 设置 EQ 系数（来自 IOCTL）
-void EQControl_SetBiquadCoeffs(const EQCoeffParams* params);
-
-void EQControl_GetBiquadCoeffs(EQCoeffParams* outParams);
-
-// PCM EQ 处理接口（接收 PCM 缓冲区）
-void EQControl_Apply(BYTE* pBuffer, ULONG length);
+#ifdef __cplusplus
+}
+#endif

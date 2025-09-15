@@ -1,272 +1,132 @@
-﻿#include "AudioVolumeControl.h"
-#include "AudioEQControl.h"
+﻿//
+// AudioControlDispatch.cpp —— 统一 IOCTL 分发入口（KS 驱动唯一通道）
+//
+
 #include <ntddk.h>
-#include <wdm.h>
+#include "KianaControl.h"          // IOCTL 宏（内部用 <devioctl.h>）
+#include "AudioVolumeControl.h"    // g_DeviceVolume / g_Muted + VolumeControl_*
+#include "AudioEQControl.h"        // EQControl_*（也提供 EQ_TEST_BUFFER_SIZE 与测试缓冲 extern）
 
-NTSTATUS AudioVolumeControl_DispatchIoControl(
-    _In_ PDEVICE_OBJECT DeviceObject,
-    _Inout_ PIRP Irp)
+// ===== Test-only IOCTL（仅内部调试）=========================================
+#define IOCTL_SEND_PCM   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x911, METHOD_BUFFERED, FILE_WRITE_DATA)
+#define IOCTL_RECV_PCM   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x912, METHOD_BUFFERED, FILE_READ_DATA)
+
+// 测试缓冲（在 AudioEQControl.cpp 定义；这里仅引用）
+extern UCHAR g_EqTestBuffer[EQ_TEST_BUFFER_SIZE];
+extern ULONG g_EqTestSize;
+
+static __forceinline NTSTATUS _Complete(PIRP Irp, NTSTATUS Status, ULONG_PTR Info = 0)
 {
-    PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(Irp);
-    NTSTATUS status = STATUS_INVALID_DEVICE_REQUEST;
-    ULONG_PTR info = 0;
+    Irp->IoStatus.Status = Status;
+    Irp->IoStatus.Information = Info;
+    IoCompleteRequest(Irp, IO_NO_INCREMENT);
+    return Status;
+}
 
-    ULONG inputLength = irpSp->Parameters.DeviceIoControl.InputBufferLength;
-    ULONG outputLength = irpSp->Parameters.DeviceIoControl.OutputBufferLength;
+// CREATE/CLOSE：简单成功
+NTSTATUS AudioVolumeControl_DispatchCreate(_In_ PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp)
+{
+    UNREFERENCED_PARAMETER(DeviceObject);
+    return _Complete(Irp, STATUS_SUCCESS, 0);
+}
 
-    switch (irpSp->Parameters.DeviceIoControl.IoControlCode)
+NTSTATUS AudioVolumeControl_DispatchClose(_In_ PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp)
+{
+    UNREFERENCED_PARAMETER(DeviceObject);
+    return _Complete(Irp, STATUS_SUCCESS, 0);
+}
+
+// 统一 IOCTL 分发
+NTSTATUS AudioVolumeControl_DispatchIoControl(_In_ PDEVICE_OBJECT DeviceObject, _Inout_ PIRP Irp)
+{
+    UNREFERENCED_PARAMETER(DeviceObject);
+
+    PIO_STACK_LOCATION sp = IoGetCurrentIrpStackLocation(Irp);
+    ULONG  code   = sp->Parameters.DeviceIoControl.IoControlCode;
+    ULONG  inLen  = sp->Parameters.DeviceIoControl.InputBufferLength;
+    ULONG  outLen = sp->Parameters.DeviceIoControl.OutputBufferLength;
+    PVOID  buf    = Irp->AssociatedIrp.SystemBuffer;
+
+    NTSTATUS   status = STATUS_INVALID_DEVICE_REQUEST;
+    ULONG_PTR  info   = 0;
+
+    switch (code)
     {
-    case IOCTL_SET_VOLUME:
-        DbgPrint("IOCTL_SET_VOLUME called. InputLen = %lu", inputLength);
-
-        if (Irp->AssociatedIrp.SystemBuffer == NULL)
-        {
-            DbgPrint("SystemBuffer is NULL!");
-            status = STATUS_INVALID_PARAMETER;
-            break;
-        }
-
-        if (inputLength >= sizeof(ULONG))
-        {
-            ULONG newVolume = *(ULONG *)Irp->AssociatedIrp.SystemBuffer;
-
-            // 调试打印原始 buffer（可选）
-            UCHAR *p = (UCHAR *)Irp->AssociatedIrp.SystemBuffer;
-            DbgPrint("Raw buffer: %02X %02X %02X %02X", p[0], p[1], p[2], p[3]);
-
-            if (newVolume <= 100)
-            {
-                g_DeviceVolume = newVolume;
-                DbgPrint("Set volume: %lu", g_DeviceVolume);
-                status = STATUS_SUCCESS;
-            }
-            else
-            {
-                DbgPrint("Invalid volume: %lu", newVolume);
-                status = STATUS_INVALID_PARAMETER;
-            }
-        }
-        else
-        {
-            DbgPrint("Input buffer too small for IOCTL_SET_VOLUME. Expected: %lu, Got: %lu", sizeof(ULONG), inputLength);
-            status = STATUS_BUFFER_TOO_SMALL;
-        }
-        break;
-
-    case IOCTL_GET_VOLUME:
-        if (outputLength >= sizeof(ULONG))
-        {
-            *(ULONG *)Irp->AssociatedIrp.SystemBuffer = g_DeviceVolume;
-            info = sizeof(ULONG);
-            DbgPrint("Get volume: %lu", g_DeviceVolume);
-            status = STATUS_SUCCESS;
-        }
-        break;
-
-    case IOCTL_MUTE_AUDIO:
-        g_Muted = TRUE;
-        DbgPrint("Audio muted.");
+    case IOCTL_KIANA_GET_VERSION:
+    {
+        static const char ver[] = "Kiana KS EQ Driver v1.0";
+        if (!buf || outLen < sizeof(ver)) { status = STATUS_BUFFER_TOO_SMALL; break; }
+        RtlCopyMemory(buf, ver, sizeof(ver));
+        info   = sizeof(ver);
         status = STATUS_SUCCESS;
         break;
+    }
 
-    case IOCTL_UNMUTE_AUDIO:
-        g_Muted = FALSE;
-        DbgPrint("Audio unmuted.");
+    case IOCTL_KIANA_SET_VOLUME:
+    {
+        if (!buf || inLen < sizeof(ULONG)) { status = STATUS_BUFFER_TOO_SMALL; break; }
+        ULONG v = *(ULONG*)buf;
+        if (v > 100) v = 100;
+        g_DeviceVolume = v;
         status = STATUS_SUCCESS;
         break;
+    }
 
-    // case IOCTL_SET_EQ_PARAMS:
-    //     DbgPrint("[EQ] IOCTL_SET_EQ_PARAMS received, inputLength=%lu", inputLength);
-
-    //     if (Irp->AssociatedIrp.SystemBuffer == NULL)
-    //     {
-    //         DbgPrint("[ERR] EQ Set Params: SystemBuffer is NULL");
-    //         status = STATUS_INVALID_PARAMETER;
-    //         break;
-    //     }
-
-    //     if (inputLength >= sizeof(EQControlParams))
-    //     {
-    //         EQControlParams *inParams = (EQControlParams *)Irp->AssociatedIrp.SystemBuffer;
-
-    //         DbgPrint("[EQ] BandCount = %d", inParams->BandCount);
-    //         for (int i = 0; i < inParams->BandCount && i < EQ_BANDS; ++i)
-    //         {
-    //             DbgPrint("[EQ] Band[%d]: Freq=%d Hz, Gain=%.2f dB, Q=%.2f",
-    //                      i,
-    //                      inParams->Bands[i].FrequencyHz,
-    //                      inParams->Bands[i].GainDb,
-    //                      inParams->Bands[i].Q);
-    //         }
-
-    //         EQControl_SetParams(inParams);
-    //         status = STATUS_SUCCESS;
-    //     }
-    //     else
-    //     {
-    //         DbgPrint("[ERR] EQ Set Params: Buffer too small. Got %lu, need %lu",
-    //                  inputLength, sizeof(EQControlParams));
-    //         status = STATUS_INVALID_PARAMETER;
-    //     }
-    //     break;
-
-    // case IOCTL_GET_EQ_PARAMS:
-    //     if (outputLength >= sizeof(EQControlParams))
-    //     {
-    //         EQControlParams *outParams = (EQControlParams *)Irp->AssociatedIrp.SystemBuffer;
-    //         EQControl_GetParams(outParams);
-    //         info = sizeof(EQControlParams);
-    //         DbgPrint("EQ params read. BandCount=%d\n", outParams->BandCount);
-    //         status = STATUS_SUCCESS;
-    //     }
-    //     else
-    //     {
-    //         DbgPrint("Invalid EQ get params buffer\n");
-    //         status = STATUS_INVALID_PARAMETER;
-    //     }
-    //     break;
-    case IOCTL_SET_EQ_BIQUAD_COEFFS:
-        if (inputLength >= sizeof(EQCoeffParams))
-        {
-            EQCoeffParams *inCoeffs = (EQCoeffParams *)Irp->AssociatedIrp.SystemBuffer;
-
-            DbgPrint("[EQ] === IOCTL_SET_EQ_BIQUAD_COEFFS ===\n");
-            DbgPrint("[EQ] BandCount = %d\n", inCoeffs->BandCount);
-
-            for (int i = 0; i < inCoeffs->BandCount && i < EQ_BANDS; ++i)
-            {
-                DbgPrint("[EQ] Band[%02d] Coeffs:\n", i);
-                DbgPrint("      b0 = %8d\tb1 = %8d\tb2 = %8d\n",
-                         inCoeffs->Bands[i].b0,
-                         inCoeffs->Bands[i].b1,
-                         inCoeffs->Bands[i].b2);
-                DbgPrint("      a1 = %8d\ta2 = %8d\n",
-                         inCoeffs->Bands[i].a1,
-                         inCoeffs->Bands[i].a2);
-            }
-
-            EQControl_SetBiquadCoeffs(inCoeffs);
-            DbgPrint("[EQ] => EQ Coefficients Applied Successfully\n");
-
-            status = STATUS_SUCCESS;
-            info = 0;
-        }
-        else
-        {
-            DbgPrint("[EQ] [ERROR] IOCTL_SET_EQ_BIQUAD_COEFFS: Buffer too small (%lu < %lu)\n",
-                     inputLength, sizeof(EQCoeffParams));
-            status = STATUS_INVALID_PARAMETER;
-        }
+    case IOCTL_KIANA_GET_VOLUME:
+    {
+        if (!buf || outLen < sizeof(ULONG)) { status = STATUS_BUFFER_TOO_SMALL; break; }
+        *(ULONG*)buf = g_DeviceVolume;
+        info   = sizeof(ULONG);
+        status = STATUS_SUCCESS;
         break;
-    case IOCTL_GET_EQ_BIQUAD_COEFFS:
-        if (outputLength >= sizeof(EQCoeffParams))
-        {
-            EQCoeffParams *outCoeffs = (EQCoeffParams *)Irp->AssociatedIrp.SystemBuffer;
+    }
 
-            EQControl_GetBiquadCoeffs(outCoeffs);
-            DbgPrint("[EQ] === IOCTL_GET_EQ_BIQUAD_COEFFS ===\n");
-            DbgPrint("[EQ] Returning BandCount = %d\n", outCoeffs->BandCount);
+    case IOCTL_KIANA_MUTE:    g_Muted = TRUE;  status = STATUS_SUCCESS; break;
+    case IOCTL_KIANA_UNMUTE:  g_Muted = FALSE; status = STATUS_SUCCESS; break;
 
-            for (int i = 0; i < outCoeffs->BandCount && i < EQ_BANDS; ++i)
-            {
-                DbgPrint("[EQ] Band[%02d] Coeffs:\n", i);
-                DbgPrint("      b0 = %8d\tb1 = %8d\tb2 = %8d\n",
-                         outCoeffs->Bands[i].b0,
-                         outCoeffs->Bands[i].b1,
-                         outCoeffs->Bands[i].b2);
-                DbgPrint("      a1 = %8d\ta2 = %8d\n",
-                         outCoeffs->Bands[i].a1,
-                         outCoeffs->Bands[i].a2);
-            }
-
-            status = STATUS_SUCCESS;
-            info = sizeof(EQCoeffParams);
-        }
-        else
-        {
-            DbgPrint("[EQ] [ERROR] IOCTL_GET_EQ_BIQUAD_COEFFS: Buffer too small (%lu < %lu)\n",
-                     outputLength, sizeof(EQCoeffParams));
-            status = STATUS_BUFFER_TOO_SMALL;
-        }
+    // ===== EQ：12 段 biquad 系数（Q15）=====================================
+    case IOCTL_KIANA_SET_EQ_BIQUAD:
+    {
+        if (!buf || inLen < sizeof(EQCoeffParams)) { status = STATUS_BUFFER_TOO_SMALL; break; }
+        EQCoeffParams* p = (EQCoeffParams*)buf;
+        EQControl_SetBiquadCoeffs(p);
+        status = STATUS_SUCCESS;
         break;
+    }
+    case IOCTL_KIANA_GET_EQ_BIQUAD:
+    {
+        if (!buf || outLen < sizeof(EQCoeffParams)) { status = STATUS_BUFFER_TOO_SMALL; break; }
+        EQCoeffParams* p = (EQCoeffParams*)buf;
+        EQControl_GetBiquadCoeffs(p);
+        info   = sizeof(EQCoeffParams);
+        status = STATUS_SUCCESS;
+        break;
+    }
 
+    // ===== 内部调试：送/取原始 PCM =========================================
     case IOCTL_SEND_PCM:
-        if (Irp->AssociatedIrp.SystemBuffer == NULL || inputLength == 0)
-        {
-            DbgPrint("[EQTEST] IOCTL_SEND_PCM: Invalid input buffer.");
-            status = STATUS_INVALID_PARAMETER;
-            break;
-        }
-
-        if (inputLength > EQ_TEST_BUFFER_SIZE)
-        {
-            DbgPrint("[EQTEST] IOCTL_SEND_PCM: Buffer too large (%lu bytes)", inputLength);
-            status = STATUS_BUFFER_OVERFLOW;
-            break;
-        }
-
-        // 保存数据供调试或用户态回读
-        RtlCopyMemory(g_EqTestBuffer, Irp->AssociatedIrp.SystemBuffer, inputLength);
-        g_EqTestSize = inputLength;
-
-        DbgPrint("[EQTEST] IOCTL_SEND_PCM saved raw PCM (%lu bytes)", inputLength);
+    {
+        if (!buf || inLen == 0) { status = STATUS_INVALID_PARAMETER; break; }
+        if (inLen > EQ_TEST_BUFFER_SIZE) { status = STATUS_BUFFER_OVERFLOW; break; }
+        RtlCopyMemory(g_EqTestBuffer, buf, inLen);
+        g_EqTestSize = inLen;
         status = STATUS_SUCCESS;
         break;
-
+    }
     case IOCTL_RECV_PCM:
-        if (Irp->AssociatedIrp.SystemBuffer == NULL || outputLength == 0)
-        {
-            DbgPrint("[EQTEST] IOCTL_RECV_PCM: Invalid output buffer.");
-            status = STATUS_INVALID_PARAMETER;
-            break;
-        }
-
-        if (outputLength < g_EqTestSize)
-        {
-            DbgPrint("[EQTEST] IOCTL_RECV_PCM: Output buffer too small. Need %lu bytes", g_EqTestSize);
-            status = STATUS_BUFFER_TOO_SMALL;
-            break;
-        }
-
-        RtlCopyMemory(Irp->AssociatedIrp.SystemBuffer, g_EqTestBuffer, g_EqTestSize);
-        info = g_EqTestSize;
-
-        DbgPrint("[EQTEST] IOCTL_RECV_PCM: Returned raw PCM (%lu bytes)", g_EqTestSize);
+    {
+        if (!buf || outLen == 0) { status = STATUS_INVALID_PARAMETER; break; }
+        if (outLen < g_EqTestSize) { status = STATUS_BUFFER_TOO_SMALL; break; }
+        RtlCopyMemory(buf, g_EqTestBuffer, g_EqTestSize);
+        info   = g_EqTestSize;
         status = STATUS_SUCCESS;
         break;
+    }
 
     default:
-        DbgPrint("Unknown IOCTL: 0x%X", irpSp->Parameters.DeviceIoControl.IoControlCode);
         status = STATUS_INVALID_DEVICE_REQUEST;
         break;
     }
 
-    Irp->IoStatus.Status = status;
-    Irp->IoStatus.Information = info;
-    DbgPrint("[IOCTL] Done. Status=0x%08X, Info=%lu", status, info);
-    IoCompleteRequest(Irp, IO_NO_INCREMENT);
-    return status;
-}
-NTSTATUS AudioVolumeControl_DispatchCreate(
-    _In_ PDEVICE_OBJECT DeviceObject,
-    _In_ PIRP Irp)
-{
-    UNREFERENCED_PARAMETER(DeviceObject);
-    Irp->IoStatus.Status = STATUS_SUCCESS;
-    Irp->IoStatus.Information = 0;
-    IoCompleteRequest(Irp, IO_NO_INCREMENT);
-    DbgPrint("DispatchCreate called.");
-    return STATUS_SUCCESS;
-}
-
-NTSTATUS AudioVolumeControl_DispatchClose(
-    _In_ PDEVICE_OBJECT DeviceObject,
-    _In_ PIRP Irp)
-{
-    UNREFERENCED_PARAMETER(DeviceObject);
-    Irp->IoStatus.Status = STATUS_SUCCESS;
-    Irp->IoStatus.Information = 0;
-    IoCompleteRequest(Irp, IO_NO_INCREMENT);
-    DbgPrint("DispatchClose called.");
-    return STATUS_SUCCESS;
+    return _Complete(Irp, status, info);
 }

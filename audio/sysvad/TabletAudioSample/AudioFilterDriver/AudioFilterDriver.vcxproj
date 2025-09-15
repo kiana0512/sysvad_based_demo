@@ -150,6 +150,7 @@
     <ClInclude Include="..\AudioVolumeControl\AudioEQTypes.h" />
     <ClInclude Include="..\AudioVolumeControl\AudioVolumeControl.h" />
     <ClInclude Include="..\AudioVolumeControl\eq.h" />
+    <ClInclude Include="..\AudioVolumeControl\KianaControl.h" />
     <ClInclude Include="AudioFilterDriver.h" />
     <ClInclude Include="AudioProcessing\ApplyAudioProcessing.h" />
     <ClInclude Include="FilterTopology.h" />
@@ -157,10 +158,8 @@
     <ClInclude Include="KsSanityCheck.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\AudioVolumeControl\AudioControlCore.cpp" />
     <ClCompile Include="..\AudioVolumeControl\AudioControlDispatch.cpp" />
     <ClCompile Include="..\AudioVolumeControl\AudioEQControl.cpp" />
-    <ClCompile Include="..\AudioVolumeControl\AudioEQDispatch.cpp" />
     <ClCompile Include="..\AudioVolumeControl\AudioVolumeProcessor.cpp" />
     <ClCompile Include="..\AudioVolumeControl\eq.cpp" />
     <ClCompile Include="AudioProcessing\ApplyAudioProcessing.cpp" />
