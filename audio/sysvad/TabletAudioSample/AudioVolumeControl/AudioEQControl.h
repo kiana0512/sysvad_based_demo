@@ -9,9 +9,9 @@
 #include <ntddk.h>
 #include "AudioEQTypes.h"
 
-// === 共享给内核内多个编译单元的测试缓冲大小（默认 256 KB） ===
+// ===== 调试测试缓冲大小（默认 1 MB，可用 /D EQ_TEST_BUFFER_SIZE=… 覆盖） =====
 #ifndef EQ_TEST_BUFFER_SIZE
-#define EQ_TEST_BUFFER_SIZE 262144u
+#define EQ_TEST_BUFFER_SIZE (1024u * 1024u)
 #endif
 
 #ifdef __cplusplus
@@ -21,13 +21,12 @@ extern "C" {
 // 初始化：清空 12 段的系数与历史状态
 void EQControl_Init(void);
 
-// 下发/读取一整组 Q15 系数（前 BandCount 有效）
-// 换系数时内部会清历史状态，避免爆音
+// 下发/读取一整组 Q15 系数（前 BandCount 有效）；换系数时会清历史，避免冲击声
 void EQControl_SetBiquadCoeffs(_In_ const EQCoeffParams* params);
 void EQControl_GetBiquadCoeffs(_Out_ EQCoeffParams* outParams);
 
 // 对一帧 PCM（立体声 16-bit 小端）执行 12 段串联 EQ
-// 注意：统一使用 UCHAR*，避免 BYTE 未声明
+// 注意：统一使用 UCHAR*，避免 BYTE 在 WDK 环境下未声明/冲突
 void EQControl_Apply(_Inout_updates_bytes_(length) UCHAR* pBuffer, _In_ ULONG length);
 
 // === 调试缓冲（由 AudioEQControl.cpp 定义；这里仅导出给分发模块使用） ===

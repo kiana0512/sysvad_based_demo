@@ -1,61 +1,65 @@
-; ======================== AudioFilterService.inf ========================
+; ======================== AudioFilterDriver.inf ========================
 [Version]
-Signature   = "$WINDOWS NT$"
+Signature   = "$Windows NT$"
+Class       = MEDIA
+ClassGuid   = {4d36e96c-e325-11ce-bfc1-08002BE10318}
 Provider    = %ProviderName%
-Class       = System
-ClassGuid   = {4D36E97D-E325-11CE-BFC1-08002BE10318}
-DriverVer   = 08/15/2025,1.0.0.0
+DriverVer   = 09/16/2025,1.0.0.0
 CatalogFile = AudioFilterDriver.cat
 
-[DestinationDirs]
-Drv.Copy = 12   ; %SystemRoot%\System32\drivers
+; ----------------------------------------------------------------------
+; 目的：不做设备匹配；安装即：
+;   1) 复制 AudioFilterDriver.sys
+;   2) 创建内核服务 AudioFilterDriver（Start=DEMAND）
+;   3) 追加到整个 MEDIA 类 UpperFilters（影响全类设备）
+; 适用：Windows 10 / Windows 11（x64 & ARM64）
+; ----------------------------------------------------------------------
 
-; ------------------ 安装入口（架构修饰） ------------------
+; ===== 安装入口（右键“安装”，或 InfDefaultInstall.exe）=====
 [DefaultInstall.NTamd64]
-CopyFiles = Drv.Copy
+CopyFiles  = Drv.Copy
+AddReg     = ClassFilter.AddReg
 
 [DefaultInstall.NTamd64.Services]
 AddService = AudioFilterDriver, 0x00000002, Svc.Install
 
 [DefaultInstall.NTarm64]
-CopyFiles = Drv.Copy
+CopyFiles  = Drv.Copy
+AddReg     = ClassFilter.AddReg
 
 [DefaultInstall.NTarm64.Services]
 AddService = AudioFilterDriver, 0x00000002, Svc.Install
 
-; ------------------ 卸载入口（架构修饰 + LegacyUninstall） ------------------
-[DefaultUninstall.NTamd64]
-LegacyUninstall=1
+; ===== 将本驱动追加到 MEDIA 类 UpperFilters（类级过滤器）=====
+; 0x00010008 = REG_MULTI_SZ + 追加（不覆盖已有值，如 ksthunk）
+[ClassFilter.AddReg]
+HKLM,System\CurrentControlSet\Control\Class\{4d36e96c-e325-11ce-bfc1-08002be10318},UpperFilters,0x00010008,"AudioFilterDriver"
 
-[DefaultUninstall.NTamd64.Services]
-DelService = AudioFilterDriver, 0x200
-
-[DefaultUninstall.NTarm64]
-LegacyUninstall=1
-
-[DefaultUninstall.NTarm64.Services]
-DelService = AudioFilterDriver, 0x200
-
-; ------------------ 服务定义 ------------------
+; ===== 服务定义 =====
 [Svc.Install]
 DisplayName   = %ServiceDesc%
-ServiceType   = 1          ; SERVICE_KERNEL_DRIVER
-StartType     = 3          ; SERVICE_DEMAND_START
-ErrorControl  = 1          ; SERVICE_ERROR_NORMAL
+ServiceType   = 1        ; SERVICE_KERNEL_DRIVER
+StartType     = 3        ; DEMAND_START
+ErrorControl  = 1
 ServiceBinary = %12%\AudioFilterDriver.sys
 
-; ------------------ 复制文件 ------------------
+; ===== 目标目录 / 复制文件 =====
+[DestinationDirs]
+Drv.Copy = 12  ; %SystemRoot%\System32\drivers
+
 [Drv.Copy]
 AudioFilterDriver.sys
 
+; ===== 源文件描述 =====
 [SourceDisksNames]
 1 = %DiskName%,,,
 
 [SourceDisksFiles]
 AudioFilterDriver.sys = 1
 
+; ===== 字符串 =====
 [Strings]
 ProviderName = "Kiana Audio Tech"
-ServiceDesc  = "Kiana Audio Filter Service"
+ServiceDesc  = "Kiana Audio Upper Filter (Class-Level)"
 DiskName     = "Kiana Audio Filter Installation Disk"
 ; ======================================================================

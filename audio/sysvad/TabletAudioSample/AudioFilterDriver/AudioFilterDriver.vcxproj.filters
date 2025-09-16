@@ -24,9 +24,6 @@
     </Inf>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AudioFilterDriver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FilterTopology.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -52,6 +49,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\AudioVolumeControl\KianaControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DriverEntry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

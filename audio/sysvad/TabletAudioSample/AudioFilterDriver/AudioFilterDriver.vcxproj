@@ -151,8 +151,8 @@
     <ClInclude Include="..\AudioVolumeControl\AudioVolumeControl.h" />
     <ClInclude Include="..\AudioVolumeControl\eq.h" />
     <ClInclude Include="..\AudioVolumeControl\KianaControl.h" />
-    <ClInclude Include="AudioFilterDriver.h" />
     <ClInclude Include="AudioProcessing\ApplyAudioProcessing.h" />
+    <ClInclude Include="DriverEntry.h" />
     <ClInclude Include="FilterTopology.h" />
     <ClInclude Include="KsHelper.h" />
     <ClInclude Include="KsSanityCheck.h" />
